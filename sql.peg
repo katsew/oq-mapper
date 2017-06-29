@@ -1,5 +1,6 @@
-Start
-  = CMD_CREATE _ VAL_TABLE_NAME _ WRAP_LEFT _ VALUES+ _ VALUES WRAP_RIGHT _ EOF
+START
+  =
+  	( CMD_CREATE _ VAL_TABLE_NAME _ "(" _ VALUES+ ")" _ META _ EOS )
 
 CMD_CREATE
   = STMT_CREATE _ elem:(STMT_TABLE) _ cond:(
@@ -18,14 +19,48 @@ VALUES
   =  _ expr:VALUE
   
 VALUE
-  = VAL_NAME _
-  ( TYPE / TYPE_WITH_LENGTH ) _
-  ( COND_NOT _ NULL  / "" ) _
-  ( DEFAULT_CLAUSE / "") _
-  ( COMMENT_CLAUSE / "" ) _
-  ( AUTO_INCREMENT / "") _
-  CAMMA
+  = 
+  ( 
+  	VAL_NAME _
+	( TYPE / TYPE_WITH_LENGTH ) _
+    ( COND_NOT _ NULL  / "" ) _
+    ( DEFAULT_CLAUSE / "") _
+    ( COMMENT_CLAUSE / "" ) _
+    ( AUTO_INCREMENT / "") _
+    BR
+  ) / (
+    ( PK  /  INDEX) BR
+  ) / (
+    CONSTRAINT BR
+  )
   
+META
+  = ( "ENGINE" / "engine" ) _ "=" ENGINES _ ( AUTO_INCREMENT "=" integer / "" ) _ DEFAULT_CHARSET
+  
+DEFAULT_CHARSET
+  = "DEFAULT CHARSET" "=" CHARSETS
+
+CHARSETS
+  = ("utf8")
+
+ENGINES
+  = ( "InnoDB" )
+
+PK
+  = ("PRIMARY KEY" / "primary key") _ "(" VAL_NAME ")"
+
+INDEX
+  = ( "KEY" / "key" ) _ VAL_NAME _ "(" VAL_NAME ")"
+
+CONSTRAINT
+  = ( "CONSTRAINT" / "constraint" ) _ VAL_NAME _ (FK)
+
+FK
+  = ( "FOREIGN KEY" / "foreign key") _ "(" VAL_NAME ")" _ ( "REFERENCES" / "references" ) _ VAL_NAME _ "(" VAL_NAME ")" _ ON_EVENT
+
+ON_EVENT
+  =  ( "ON DELETE NO ACTION ON UPDATE NO ACTION" / "" )
+
 TYPE
   = (
     ("datetime" / "DATETIME") /
@@ -41,7 +76,7 @@ TYPE_WITH_LENGTH
   )
 
 LENGTH
-  = WRAP_LEFT _ integer _ WRAP_RIGHT
+  = "(" _ integer _ ")"
 
 NULL
   = ("null" / "NULL")
@@ -50,13 +85,13 @@ DEFAULT_CLAUSE
   = ("default" / "DEFAULT") _ (NULL / defaults)
   
 COMMENT_CLAUSE
-  = ("comment" / "COMMENT") _ "'" 
+  = ("comment" / "COMMENT") _ comments
 
 SIGN
   = ("unsigned" / "")
 
 AUTO_INCREMENT
-  = ("AUTO_INCREMENT")
+  = ("AUTO_INCREMENT" / "auto increment")
 
 STMT_CREATE
   = ("create" / "CREATE")
@@ -73,23 +108,33 @@ COND_NOT
 OPERAND_EXISTS
   = ("exists" / "EXISTS")
 
-WRAP_LEFT
-  = "("
-
-WRAP_RIGHT
-  = ")"
-
-CAMMA
+COMMA
   = ","
   
-EOF
+EOS
   = ";"
+  
+EOF
+  = !.
+  
+EOL
+  = EOF / [\n\r]+
+//  = [\n\r\u2028\u2029]
+
+BR
+  = (EOL / COMMA)
+
+src
+  = .
 
 string
 	= chars:[a-zA-Z]+ { return chars.join(""); }
 
 value
-    = chars:[a-zA-Z_]+
+    = chars:[a-zA-Z_]+ { return chars.join(""); }
+    
+comments
+    = "'" (!"'" src)* "'"
 
 defaults
     = "'" chars:[a-zA-Z0-9]+ "'"
@@ -99,4 +144,3 @@ integer
 
 _ "whitespace"
   = [ \t\n\r]*
-              
