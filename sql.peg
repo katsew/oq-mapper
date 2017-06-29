@@ -1,35 +1,62 @@
 Start
-  = CMD_CREATE _ VAL_TABLE_NAME _ VALUES+ _ EOF
+  = CMD_CREATE _ VAL_TABLE_NAME _ WRAP_LEFT _ VALUES+ _ VALUES WRAP_RIGHT _ EOF
 
 CMD_CREATE
   = STMT_CREATE _ elem:(STMT_TABLE) _ cond:(
     STMT_IF _ OPERAND_EXISTS /
-    STMT_IF _ COND_NOT _ OPERAND_EXISTS / ""
+    STMT_IF _ COND_NOT _ OPERAND_EXISTS /
+    ""
   )
   
 VAL_TABLE_NAME
   = (VAL_NAME "." VAL_NAME) / (VAL_NAME)
   
 VAL_NAME
-  = ("`" string "`") / string
-
-WRAP_LEFT
-  = "("
-
-WRAP_RIGHT
-  = ")"
+  = ("`" value "`") / value
   
 VALUES
-  = WRAP_LEFT _ expr:VALUE _ WRAP_RIGHT
+  =  _ expr:VALUE
   
 VALUE
-  = VAL_NAME _ TYPE SIGN
+  = VAL_NAME _
+  ( TYPE / TYPE_WITH_LENGTH ) _
+  ( COND_NOT _ NULL  / "" ) _
+  ( DEFAULT_CLAUSE / "") _
+  ( COMMENT_CLAUSE / "" ) _
+  ( AUTO_INCREMENT / "") _
+  CAMMA
   
 TYPE
-  = ("int" _ "(" _ integer _ ")")
+  = (
+    ("datetime" / "DATETIME") /
+   ( "date" / "DATE") /
+    NULL
+  )
+
+TYPE_WITH_LENGTH
+  = (
+    ("int" / "INT") _ LENGTH _ SIGN  /
+    ("varchar" / "VARCHAR") _ LENGTH /
+    ("tinyint" / "TINYINT") _ LENGTH _ SIGN
+  )
+
+LENGTH
+  = WRAP_LEFT _ integer _ WRAP_RIGHT
+
+NULL
+  = ("null" / "NULL")
   
+DEFAULT_CLAUSE
+  = ("default" / "DEFAULT") _ (NULL / defaults)
+  
+COMMENT_CLAUSE
+  = ("comment" / "COMMENT") _ "'" 
+
 SIGN
   = ("unsigned" / "")
+
+AUTO_INCREMENT
+  = ("AUTO_INCREMENT")
 
 STMT_CREATE
   = ("create" / "CREATE")
@@ -45,6 +72,15 @@ COND_NOT
 
 OPERAND_EXISTS
   = ("exists" / "EXISTS")
+
+WRAP_LEFT
+  = "("
+
+WRAP_RIGHT
+  = ")"
+
+CAMMA
+  = ","
   
 EOF
   = ";"
@@ -53,7 +89,10 @@ string
 	= chars:[a-zA-Z]+ { return chars.join(""); }
 
 value
-    = chars:[a-zA-Z]+
+    = chars:[a-zA-Z_]+
+
+defaults
+    = "'" chars:[a-zA-Z0-9]+ "'"
 
 integer
   = _ [0-9]+ { return parseInt(text(), 10); }
