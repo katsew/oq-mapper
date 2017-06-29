@@ -1,0 +1,63 @@
+Start
+  = CMD_CREATE _ VAL_TABLE_NAME _ VALUES+ _ EOF
+
+CMD_CREATE
+  = STMT_CREATE _ elem:(STMT_TABLE) _ cond:(
+    STMT_IF _ OPERAND_EXISTS /
+    STMT_IF _ COND_NOT _ OPERAND_EXISTS / ""
+  )
+  
+VAL_TABLE_NAME
+  = (VAL_NAME "." VAL_NAME) / (VAL_NAME)
+  
+VAL_NAME
+  = ("`" string "`") / string
+
+WRAP_LEFT
+  = "("
+
+WRAP_RIGHT
+  = ")"
+  
+VALUES
+  = WRAP_LEFT _ expr:VALUE _ WRAP_RIGHT
+  
+VALUE
+  = VAL_NAME _ TYPE SIGN
+  
+TYPE
+  = ("int" _ "(" _ integer _ ")")
+  
+SIGN
+  = ("unsigned" / "")
+
+STMT_CREATE
+  = ("create" / "CREATE")
+
+STMT_TABLE
+  = ("table" / "TABLE")
+
+STMT_IF
+  = ("if" / "IF")
+
+COND_NOT
+  = ("not" / "NOT")
+
+OPERAND_EXISTS
+  = ("exists" / "EXISTS")
+  
+EOF
+  = ";"
+
+string
+	= chars:[a-zA-Z]+ { return chars.join(""); }
+
+value
+    = chars:[a-zA-Z]+
+
+integer
+  = _ [0-9]+ { return parseInt(text(), 10); }
+
+_ "whitespace"
+  = [ \t\n\r]*
+              
