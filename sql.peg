@@ -1,128 +1,205 @@
-START
-  =
-  	( CMD_CREATE _ VAL_TABLE_NAME _ "(" _ VALUES+ ")" _ META _ EOS )
+{
+	var flatten = function (arr) {
+        return arr.reduce(function(a, b) {
+	        return Array.isArray(b) ? a.concat(flatten(b)) : a.concat(b);
+        }, []).filter(function(item) {
+	        return !Array.isArray(item) && item != null && item !== "\n";
+        });
+    };
+}
 
-CMD_CREATE
-  = STMT_CREATE _ elem:(STMT_TABLE) _ cond:(
-    STMT_IF _ OPERAND_EXISTS /
-    STMT_IF _ COND_NOT _ OPERAND_EXISTS /
-    ""
+
+START
+  = __ program:PROGRAM+ {
+    return program;
+  }
+    
+PROGRAM
+  = OperationCreate
+  / OperationSet
+  / OperationDrop
+  / OperationUse
+  / Comment
+  / LineTerminatorSequence
+
+OperationCreate
+  =
+ (
+ 	StatementCreate _ elem:(StatementTable) _ cond:(
+	    ConditionIf _ OperandExists /
+	    ConditionIf _ ConditionNot _ OperandExists /
+    "") _
+    TableName _ "(" _ ("\n" / "") _ Values+ _ ")" _ ("\n" / "") _
+    MetaClause _
+    EOS 
+  )
+  / ( StatementCreate _ "SCHEMA" _ cond:(
+    ConditionIf _ OperandExists /
+    ConditionIf _ ConditionNot _ OperandExists /
+    "") _ TableName _ ( "DEFAULT CHARACTER SET utf8" / "") _ EOS
   )
   
-VAL_TABLE_NAME
-  = (VAL_NAME "." VAL_NAME) / (VAL_NAME)
+OperationUse
+  = "USE" _ TableName _ EOS
+
+OperationSet
+  = "SET" _ elems:(!LineTerminator src)* EOS { return elems.join(""); }
+
+OperationDrop
+  = "DROP" _ ( "SCHEMA" / "TABLE" ) _ (
+    ConditionIf _ OperandExists /
+    ConditionIf _ ConditionNot _ OperandExists /
+    ""
+  ) _ TableName _ EOS
+
+TableName
+  = (ValueName "." ValueName) / (ValueName)
   
-VAL_NAME
-  = ("`" value "`") / value
+ValueName
+  = val:(("`" value "`") / value) {
+    return Array.isArray(val) ? val.join("").replace(/`/g, "") : val;
+  }
+
+
+Values
+  =  _ expr:Value {
+    var obj = flatten(expr);
+    console.log(obj);
+    return obj;
+  }
   
-VALUES
-  =  _ expr:VALUE
-  
-VALUE
+Value
   = 
   ( 
-  	VAL_NAME _
-	( TYPE / TYPE_WITH_LENGTH ) _
-    ( COND_NOT _ NULL  / "" ) _
-    ( DEFAULT_CLAUSE / "") _
-    ( COMMENT_CLAUSE / "" ) _
-    ( AUTO_INCREMENT / "") _
+  	ValueName _
+	( Type / TypeWithLength ) _
+    ( NULL  / "" ) _
+    ( ConditionNot _ NULL  / "" ) _
+    ( DefaultClause / "") _
+    ( CommentClause / "" ) _
+    ( AutoIncrement / "") _
     BR
   ) / (
-    ( PK  /  INDEX) BR
+    ( PrimaryKey  /  Index ) BR
   ) / (
-    CONSTRAINT BR
+    Constraint BR
   )
   
-META
-  = ( "ENGINE" / "engine" ) _ "=" ENGINES _ ( AUTO_INCREMENT "=" integer / "" ) _ DEFAULT_CHARSET
+MetaClause
+  = ( "ENGINE" / "engine" ) _ "=" _ engines _ (
+  ( AutoIncrement "=" integer / "" ) _
+  ( DefaultCharset / "") _
+)
   
-DEFAULT_CHARSET
-  = "DEFAULT CHARSET" "=" CHARSETS
+DefaultCharset "charset"
+  = "DEFAULT CHARSET" _ "=" _ charsets
 
-CHARSETS
+charsets
   = ("utf8")
 
-ENGINES
+engines
   = ( "InnoDB" )
 
-PK
-  = ("PRIMARY KEY" / "primary key") _ "(" VAL_NAME ")"
+PrimaryKey "PK"
+  = ("PRIMARY" _ "KEY" / "primary" _ "key") _ "(" _ ValueName _ ")"
 
-INDEX
-  = ( "KEY" / "key" ) _ VAL_NAME _ "(" VAL_NAME ")"
+Index "INDEX"
+  = ( "KEY" / "key" ) _ ValueName _ "(" ValueName ")"
 
-CONSTRAINT
-  = ( "CONSTRAINT" / "constraint" ) _ VAL_NAME _ (FK)
+Constraint "CONSTRAINT"
+  = ( "CONSTRAINT" / "constraint" ) _ ValueName _ (ForeignKey)
 
-FK
-  = ( "FOREIGN KEY" / "foreign key") _ "(" VAL_NAME ")" _ ( "REFERENCES" / "references" ) _ VAL_NAME _ "(" VAL_NAME ")" _ ON_EVENT
+ForeignKey "FK"
+  = ( "FOREIGN KEY" / "foreign key") _ "(" ValueName ")" _ ( "REFERENCES" / "references" ) _ ValueName _ "(" ValueName ")" _ OnEvent
 
-ON_EVENT
+OnEvent
   =  ( "ON DELETE NO ACTION ON UPDATE NO ACTION" / "" )
 
-TYPE
+Type
   = (
     ("datetime" / "DATETIME") /
    ( "date" / "DATE") /
     NULL
   )
 
-TYPE_WITH_LENGTH
+TypeWithLength
   = (
-    ("int" / "INT") _ LENGTH _ SIGN  /
-    ("varchar" / "VARCHAR") _ LENGTH /
-    ("tinyint" / "TINYINT") _ LENGTH _ SIGN
+    ("int" / "INT") _ ( ValueLength / "" ) _ Sign  /
+    ("varchar" / "VARCHAR") _ ( ValueLength / "" ) /
+    ("tinyint" / "TINYINT") _ ( ValueLength / "" ) _ Sign
   )
 
-LENGTH
+ValueLength
   = "(" _ integer _ ")"
 
 NULL
   = ("null" / "NULL")
   
-DEFAULT_CLAUSE
+DefaultClause
   = ("default" / "DEFAULT") _ (NULL / defaults)
   
-COMMENT_CLAUSE
+CommentClause
   = ("comment" / "COMMENT") _ comments
 
-SIGN
-  = ("unsigned" / "")
+Sign
+  = ("unsigned" / "UNSIGNED" / "")
 
-AUTO_INCREMENT
+AutoIncrement
   = ("AUTO_INCREMENT" / "auto increment")
 
-STMT_CREATE
+StatementCreate
   = ("create" / "CREATE")
 
-STMT_TABLE
+StatementTable
   = ("table" / "TABLE")
 
-STMT_IF
+ConditionIf
   = ("if" / "IF")
 
-COND_NOT
+ConditionNot
   = ("not" / "NOT")
 
-OPERAND_EXISTS
+OperandExists
   = ("exists" / "EXISTS")
 
 COMMA
   = ","
   
 EOS
-  = ";"
+  = __ ";"
+  / _ SingleLineComment? LineTerminatorSequence
+  / __ EOF
   
 EOF
   = !.
   
 EOL
   = EOF / [\n\r]+
-//  = [\n\r\u2028\u2029]
+
+MultiLineComment
+  = "/*" (!"*/" src)* "*/"
+  
+MultiLineCommentNoLineTerminator
+  = "/*" (!("*/" / LineTerminator) src)* "*/"
+
+SingleLineComment
+  = "--" (!LineTerminator src)*
+
+Comment
+  = MultiLineComment / SingleLineComment
+
+LineTerminator
+  = [\n\r\u2028\u2029]
+
+LineTerminatorSequence "end of line"
+  = "\n"
+  / "\r\n"
+  / "\r"
+  / "\u2028"
+  / "\u2029"
 
 BR
-  = (EOL / COMMA)
+  = ( COMMA EOL / "" )
 
 src
   = .
@@ -134,13 +211,27 @@ value
     = chars:[a-zA-Z_]+ { return chars.join(""); }
     
 comments
-    = "'" (!"'" src)* "'"
+    = chars:("'" (!"'" src)* "'") { return chars.join(""); }
 
 defaults
-    = "'" chars:[a-zA-Z0-9]+ "'"
+    = ( "'" chars:[a-zA-Z0-9]+ "'" ) / integer
 
 integer
   = _ [0-9]+ { return parseInt(text(), 10); }
 
-_ "whitespace"
-  = [ \t\n\r]*
+_
+ = (ws / MultiLineCommentNoLineTerminator)*
+ 
+__
+ = (ws / LineTerminatorSequence / Comment)*
+
+zs = [\u0020\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]
+
+ws "whitespace"
+  = "\t"
+  / "\v"
+  / "\f"
+  / " "
+  / "\u00A0"
+  / "\uFEFF"
+  / zs
