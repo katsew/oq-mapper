@@ -1,0 +1,142 @@
+// Start ------------------------------
+Start
+  = __ queries:Queries __ {
+    return queries;
+  }
+  
+// Queries ------------------------------
+Queries
+  = body: SourceElements? {
+	return body;
+  }
+  
+// SourceElements ------------------------------
+SourceElements
+  = head: SourceElement tail:(__ SourceElement)* {
+    return [head, tail]
+  }
+  
+SourceElement
+  = Statement
+  
+// Statements ------------------------------
+
+Statement
+  = SetStatement
+  / CreateStatement
+  / DropStatement
+  / TransactionStatement
+  / UseStatement
+  / DelimiterStatement
+
+// Keywords ------------------------------
+
+Keyword
+  = SetToken
+  / CreateToken
+  / DropToken
+  / StartToken
+  / CommitToken
+  / UseToken
+  / DelimiterToken
+  / SchemaToken
+  / DefaultToken
+  / CharacterToken
+  / TableToken
+  / IfToken
+  / NotToken
+  / ExistsToken
+  / NullToken
+  / PrimaryToken
+  / KeyToken
+  / UniqueToken
+  / IndexToken
+  / ConstraintToken
+  / ForeignToken
+  / AscToken
+  / DescToken
+  / AutoIncrementToken
+  / EngineToken
+  / InsertToken
+  / IntoToken
+  / UpdateToken
+  / DeleteToken
+  / BeginToken
+  / EndToken
+  / JoinToken
+  / LeftToken
+  / RightToken
+  / InnerToken
+  / OnToken
+  / WhereToken
+  / InToken
+  / TriggerToken
+  / DefinerToken
+  
+
+Type
+  = Int
+  / UnsignedInt
+  / TinyInt
+  / UnsignedTinyInt
+  / BigInt
+  / UnsignedBigInt
+  / VarChar
+  / Date
+  / DateTime
+  
+  
+// Utilities ------------------------------
+
+EOS
+  = __ ";"
+  / _ SingleLineComment? LineTerminatorSequence
+  / _ &")"
+  / __ EOF
+
+EOF
+  = !.
+
+__
+  = (WhiteSpace / LineTerminatorSequence / Comment)*
+
+_
+  = (WhiteSpace / MultiLineCommentNoLineTerminator)*
+
+WhiteSpace "whitespace"
+  = "\t"
+  / "\v"
+  / "\f"
+  / " "
+  / "\u00A0"
+  / "\uFEFF"
+  / Zs
+
+// Separator, Space
+Zs = [\u0020\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]
+
+LineTerminator
+  = [\n\r\u2028\u2029]
+
+LineTerminatorSequence "end of line"
+  = "\n"
+  / "\r\n"
+  / "\r"
+  / "\u2028"
+  / "\u2029"
+  
+Comment "comment"
+  = MultiLineComment
+  / SingleLineComment
+
+MultiLineComment
+  = "/*" (!"*/" SourceCharacter)* "*/"
+
+MultiLineCommentNoLineTerminator
+  = "/*" (!("*/" / LineTerminator) SourceCharacter)* "*/"
+
+SingleLineComment
+  = "--" (!LineTerminator SourceCharacter)*
+  
+SourceCharacter
+  = .
