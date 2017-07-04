@@ -7,7 +7,7 @@ Start
 // Queries ------------------------------
 Queries
   = body: SourceElements? {
-	return body;
+  	return body;
   }
   
 // SourceElements ------------------------------
@@ -24,18 +24,44 @@ SourceElement
 Statement
   = SetStatement
   / CreateStatement
+  / AlterStatement
   / DropStatement
+  / TruncateStatement
   / TransactionStatement
   / UseStatement
   / DelimiterStatement
+
+SetStatement = SetToken EOS
+CreateStatement
+  = ( 
+  	    CreateToken _ TableToken _ TableName _ "(" __ Elements __ ")" EOS
+	  )
+AlterStatement = AlterToken EOS
+DropStatement = DropToken EOS
+TruncateStatement = TruncateToken EOS
+TransactionStatement = StartToken TransactionToken CommitToken EOS
+UseStatement = UseToken EOS
+DelimiterStatement = DelimiterToken EOS
 
 // Keywords ------------------------------
 
 Keyword
   = SetToken
   / CreateToken
+  / RoleToken
+  / DomainToken
+  / TypeToken
+  / TranslationToken
+  / ModuleToken
+  / ProcedureToken
+  / FunctionToken
+  / MethodToken
+  / SpecificToken
+  / AlterToken
   / DropToken
+  / TruncateToken
   / StartToken
+  / TransactionToken
   / CommitToken
   / UseToken
   / DelimiterToken
@@ -44,6 +70,9 @@ Keyword
   / CharacterToken
   / TableToken
   / IfToken
+  / ElseToken
+  / CaseToken
+  / WhenToken
   / NotToken
   / ExistsToken
   / NullToken
@@ -59,6 +88,7 @@ Keyword
   / EngineToken
   / InsertToken
   / IntoToken
+  / SelectToken
   / UpdateToken
   / DeleteToken
   / BeginToken
@@ -72,20 +102,111 @@ Keyword
   / InToken
   / TriggerToken
   / DefinerToken
-  
 
-Type
+// Tokens ------------------------------
+
+SetToken = ( "SET" / "set" )
+CreateToken =  ( "CREATE" / "create" )
+RoleToken = ( "ROLE" / "role" )
+DomainToken = ( "DOMAIN" / "domain" )
+TypeToken = ( "TYPE" / "type" )
+TranslationToken = ( "TRANSLATION" / "translation" )
+ModuleToken = ( "MODULE" / "module" )
+ProcedureToken = ( "PROCEDURE" / "procedure" )
+FunctionToken = ( "FUNCTION" / "function" )
+MethodToken = ( "METHOD" / "method" )
+SpecificToken = ( "SPECIFIC" / "specific" )
+AlterToken = ( "ALTER" / "alter" )
+DropToken = ( "DROP" / "drop" )
+TruncateToken = ( "TRUNCATE" / "truncate" )
+StartToken = ( "START" / "start" )
+TransactionToken = ( "TRANSACTION" / "transaction" )
+CommitToken = ( "COMMIT" / "commit" )
+UseToken = ( "USE" / "use" )
+DelimiterToken = ( "DELIMITER" / "delimiter" )
+SchemaToken = ( "SCHEMA" / "schema" )
+DefaultToken = ( "DEFAULT" / "default" )
+CharacterToken = ( "CHARACTER" / "character" )
+TableToken = ( "TABLE" / "table" )
+IfToken = ( "IF" / "if" )
+ElseToken = ( "ELSE" / "else" )
+CaseToken = ( "CASE" / "case" )
+WhenToken = ( "WHEN" / "when" )
+NotToken = ( "NOT" / "not" )
+ExistsToken = ( "EXISTS" / "exists" )
+NullToken = ( "NULL" / "null" )
+PrimaryToken = ( "PRIMARY" / "primary" )
+KeyToken = ( "KEY" / "key" )
+UniqueToken = ( "UNIQUE" / "unique" )
+IndexToken = ( "INDEX" / "index" )
+ConstraintToken = ( "CONSTRAINT" / "constraint" )
+ForeignToken = ( "FOREIGN" / "foreign" )
+AscToken = ( "ASC" / "asc" )
+DescToken = ( "DESC" / "desc" )
+AutoIncrementToken = ( "AUTO_INCREMENT" / "auto_increment" )
+EngineToken = ( "ENGINE" / "engine" )
+InsertToken = ( "INSERT" / "insert" )
+IntoToken = ( "INTO" / "into" )
+SelectToken = ( "SELECT" / "select" )
+UpdateToken = ( "UPDATE" / "update" )
+DeleteToken = ( "DELETE" / "delete" )
+BeginToken = ( "BEGIN" / "begin" )
+EndToken = ( "END" / "end" )
+JoinToken = ( "JOIN" / "join" )
+LeftToken = ( "LEFT" / "left" )
+RightToken = ( "RIGHT" / "right" )
+InnerToken = ( "INNER" / "inner" )
+OnToken = ( "ON" / "on" )
+WhereToken = ( "WHERE" / "where" )
+InToken = ( "IN" / "in" )
+TriggerToken = ( "TRIGGER" / "trigger" )
+DefinerToken = ( "DEFINER" / "definer" )
+  
+// Types ------------------------------
+
+Type "types"
   = Int
-  / UnsignedInt
   / TinyInt
-  / UnsignedTinyInt
   / BigInt
-  / UnsignedBigInt
   / VarChar
   / Date
   / DateTime
-  
-  
+
+Int = ( "INT" / "int" ) _ Length _ Sign
+TinyInt = ( "TINYINT" / "tinyint" ) _ Length _ Sign
+BigInt = ( "BIGINT" / "bigint" ) _ Length _ Sign
+VarChar = ( "VARCHAR" / "varchar" ) _ Length
+Date = ( "DATE" / "date" )
+DateTime = ( "DATETIME" / "datetime" )
+
+// TypeMeta ------------------------------
+
+Length "length of value" = ( "(" integer+ ")" / "" )
+Sign "signed/unsigned" = ( "UNSIGNED" / "unsigned" / "" )
+
+// Indentifiers ------------------------------
+ObjectName "identifier" = name:( "`" regularIdentifier "`" / regularIdentifier ) {
+  var objectName = Array.isArray(name) ? name.join("").replace(/`/g, "").split(",").join("") : name.replace(/`/g, "").split(",").join("");
+  console.log({ name: objectName })
+  return { name: objectName };
+}
+TableName "table name" = ( ObjectName "." ObjectName / ObjectName )
+
+// Combinations
+
+//// Column
+Elements = ( Column )*
+Column = _ ObjectName _ Type _ (
+  NotToken _ NullToken _ DefaultToken _ defaultValue
+  / NotToken _ NullToken
+  / DefaultToken _ NullToken
+)
+
+// Variables
+
+//// Engines ------------------------------
+engines = ("InnoDB" / "MyISAM")
+
 // Utilities ------------------------------
 
 EOS
@@ -132,7 +253,7 @@ Comment "comment"
 MultiLineComment
   = "/*" (!"*/" SourceCharacter)* "*/"
 
-MultiLineCommentNoLineTerminator
+MultiLineCommentNoLineTerminator "open mulit-line comment"
   = "/*" (!("*/" / LineTerminator) SourceCharacter)* "*/"
 
 SingleLineComment
@@ -140,3 +261,18 @@ SingleLineComment
   
 SourceCharacter
   = .
+
+Elision
+  = "," commas:(__ ",")*
+
+integer
+  = [0-9]
+
+letter
+  = [a-zA-Z]
+
+defaultValue
+  = ("'".+"'" / integer+)
+
+regularIdentifier
+  = [a-zA-Z_]+
