@@ -1,3 +1,15 @@
+// Functions ------------------------------
+{
+	var flatten = function (arr) {
+        return arr.reduce(function(a, b) {
+	        return Array.isArray(b) ? a.concat(flatten(b)) : a.concat(b);
+        }, []).filter(function(item) {
+	        return !Array.isArray(item) && item != null && item !== "\n";
+        });
+    };
+}
+
+
 // Start ------------------------------
 Start
   = __ queries:Queries __ {
@@ -22,7 +34,9 @@ SourceElement
 // Statements ------------------------------
 
 Statement
-  = SetStatement
+  = 
+  CommentOut
+  / SetStatement
   / CreateStatement
   / AlterStatement
   / DropStatement
@@ -31,17 +45,89 @@ Statement
   / UseStatement
   / DelimiterStatement
 
-SetStatement = SetToken EOS
+SetStatement = SetToken _ any
 CreateStatement
   = ( 
-  	    CreateToken _ TableToken _ TableName _ "(" __ Elements __ ")" EOS
+  	    CreateToken _ TableToken _ (
+          IfToken _ NotToken _ ExistsToken
+          /
+          IfToken _ ExistsToken
+          /
+          ""
+        ) _
+        TableName _ "("
+        	__ Elements __
+        ")" __ EngineToken _ "=" _ engines _ ( AutoIncrementToken "=" integer / "" ) _ ( DefaultToken _ CharsetToken "=" charsets / "")
+        EOS
 	  )
-AlterStatement = AlterToken EOS
-DropStatement = DropToken EOS
-TruncateStatement = TruncateToken EOS
+      /
+      (
+  	    CreateToken _ SchemaToken _ any EOS
+      )
+      /
+      (
+        CreateToken _ DefinerToken _ "=" _ triggerName _ TriggerToken _ TableName _ (
+          AfterToken _ InsertToken _ OnToken
+        )
+      )
+AlterStatement = AlterToken any
+DropStatement = DropToken any
+TruncateStatement = TruncateToken any
 TransactionStatement = StartToken TransactionToken CommitToken EOS
-UseStatement = UseToken EOS
-DelimiterStatement = DelimiterToken EOS
+UseStatement = UseToken any
+DelimiterStatement = DelimiterToken any
+
+// Combinations
+
+//// Comment
+Comment "comment" = CommentToken _ anyCharacter
+
+//// Column
+Elements = (
+  Constraint
+  /
+  Key
+  /
+  PrimaryKey
+  /
+  UniqueIndex
+  /
+  Index
+  /
+  column:Column {
+    return column;
+  }
+)+
+
+Column = _ ObjectName _ Type _ (
+  NullToken
+  /
+  DefaultToken _ NullToken
+  / NotToken _ NullToken _ ( AutoIncrementToken / DefaultToken _ defaultValue  / "" )
+) _ ( Comment / "" ) _ ( "," / "" ) __
+
+PrimaryKey
+  = token:(PrimaryToken _ KeyToken) _ "(" head:ObjectName tail:( __ "," __  ObjectName)*  ")" ( "," / "" ) __ {
+      console.log(token, head, tail);
+      var pk = {};
+      return pk;
+  }
+
+Key
+  = KeyToken _ ObjectName _ "(" ObjectName ")"  ( "," / "" ) __
+
+Index
+  = IndexToken _ ObjectName _ "(" ObjectName _ ( AscToken / DescToken ) ")" ( "," / "" ) __
+
+UniqueIndex
+  = UniqueToken _ IndexToken _ ObjectName _ "(" ObjectName _ ( AscToken / DescToken ) ")" ( "," / "" ) __
+
+Constraint
+  = ConstraintToken _ ObjectName _ 
+  ForeignToken _ KeyToken _ "(" ObjectName ")" _
+  ReferencesToken _ ObjectName _ "(" ObjectName ")" _
+  OnToken _ DeleteToken _ ( NoToken _ ActionToken / "" ) _
+  OnToken _ UpdateToken _ ( NoToken _ ActionToken / "" ) ( "," / "" ) __
 
 // Keywords ------------------------------
 
@@ -82,6 +168,7 @@ Keyword
   / IndexToken
   / ConstraintToken
   / ForeignToken
+  / ReferencesToken
   / AscToken
   / DescToken
   / AutoIncrementToken
@@ -102,6 +189,14 @@ Keyword
   / InToken
   / TriggerToken
   / DefinerToken
+  / NoToken
+  / ActionToken
+  / CharsetToken
+  / CommentToken
+  / VarToken
+  / BeforeToken
+  / AfterToken
+ 
 
 // Tokens ------------------------------
 
@@ -141,6 +236,7 @@ UniqueToken = ( "UNIQUE" / "unique" )
 IndexToken = ( "INDEX" / "index" )
 ConstraintToken = ( "CONSTRAINT" / "constraint" )
 ForeignToken = ( "FOREIGN" / "foreign" )
+ReferencesToken = ( "REFERENCES" / "references" )
 AscToken = ( "ASC" / "asc" )
 DescToken = ( "DESC" / "desc" )
 AutoIncrementToken = ( "AUTO_INCREMENT" / "auto_increment" )
@@ -161,6 +257,13 @@ WhereToken = ( "WHERE" / "where" )
 InToken = ( "IN" / "in" )
 TriggerToken = ( "TRIGGER" / "trigger" )
 DefinerToken = ( "DEFINER" / "definer" )
+NoToken = ( "NO" / "no" )
+ActionToken = ( "ACTION" / "action" )
+CharsetToken = ( "CHARSET" / "charset" )
+CommentToken = ( "COMMENT" / "comment" )
+VarToken = ("@")
+BeforeToken = ( "BEFORE" / "before" )
+AfterToken = ( "AFTER" / "after" )
   
 // Types ------------------------------
 
@@ -169,8 +272,8 @@ Type "types"
   / TinyInt
   / BigInt
   / VarChar
-  / Date
   / DateTime
+  / Date
 
 Int = ( "INT" / "int" ) _ Length _ Sign
 TinyInt = ( "TINYINT" / "tinyint" ) _ Length _ Sign
@@ -187,30 +290,31 @@ Sign "signed/unsigned" = ( "UNSIGNED" / "unsigned" / "" )
 // Indentifiers ------------------------------
 ObjectName "identifier" = name:( "`" regularIdentifier "`" / regularIdentifier ) {
   var objectName = Array.isArray(name) ? name.join("").replace(/`/g, "").split(",").join("") : name.replace(/`/g, "").split(",").join("");
-  console.log({ name: objectName })
+//  console.log({ name: objectName })
   return { name: objectName };
 }
-TableName "table name" = ( ObjectName "." ObjectName / ObjectName )
-
-// Combinations
-
-//// Column
-Elements = ( Column )*
-Column = _ ObjectName _ Type _ (
-  NotToken _ NullToken _ DefaultToken _ defaultValue
-  / NotToken _ NullToken
-  / DefaultToken _ NullToken
-)
+TableName "table name" = identifier:( ObjectName "." ObjectName / ObjectName ) {
+  var ret = Array.isArray(identifier) ? {
+    dbName: identifier[0]["name"],
+    tableName: identifier[2]["name"]
+  } : { dbName: "", tableName: identifier["name"] }
+//  console.log("Table object: ", ret);
+  return ret;
+}
 
 // Variables
 
 //// Engines ------------------------------
 engines = ("InnoDB" / "MyISAM")
 
+//// Charests ------------------------------
+charsets = ("utf8")
+
 // Utilities ------------------------------
 
-EOS
+EOS "end of statement"
   = __ ";"
+  / __ "$$"
   / _ SingleLineComment? LineTerminatorSequence
   / _ &")"
   / __ EOF
@@ -219,19 +323,20 @@ EOF
   = !.
 
 __
-  = (WhiteSpace / LineTerminatorSequence / Comment)*
+  = (WhiteSpace / LineTerminatorSequence / Comment / MultiLineDelimiter / MultiLineTransaction)*
 
 _
-  = (WhiteSpace / MultiLineCommentNoLineTerminator)*
+  = (WhiteSpace / MultiLineCommentNoLineTerminator / MultiLineDelimiterNoLineTerminator / MultiLineTransactionNoLineTerminator)*
 
 WhiteSpace "whitespace"
-  = "\t"
+  = 
+  ws:("\t"
   / "\v"
   / "\f"
   / " "
   / "\u00A0"
   / "\uFEFF"
-  / Zs
+  / Zs)
 
 // Separator, Space
 Zs = [\u0020\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]
@@ -246,7 +351,7 @@ LineTerminatorSequence "end of line"
   / "\u2028"
   / "\u2029"
   
-Comment "comment"
+CommentOut "comment out"
   = MultiLineComment
   / SingleLineComment
 
@@ -256,23 +361,55 @@ MultiLineComment
 MultiLineCommentNoLineTerminator "open mulit-line comment"
   = "/*" (!("*/" / LineTerminator) SourceCharacter)* "*/"
 
-SingleLineComment
+SingleLineComment "single-line comment"
   = "--" (!LineTerminator SourceCharacter)*
+
+DelimiterStart = DelimiterToken _ "$$"
+DelimiterEnd = DelimiterToken _ ";"
+
+MultiLineDelimiter
+  = DelimiterStart (!DelimiterEnd SourceCharacter)* DelimiterEnd
   
+MultiLineDelimiterNoLineTerminator "open mulit-line delimiter"
+  = DelimiterStart (!(DelimiterEnd / LineTerminator) SourceCharacter)* DelimiterEnd
+
+StartTransaction = StartToken _ TransactionToken __ EOS
+Commit = CommitToken __ EOS
+
+MultiLineTransaction
+  = StartTransaction (!Commit SourceCharacter)* Commit
+
+MultiLineTransactionNoLineTerminator "open mulit-line transaction"
+  = StartTransaction (!(Commit / LineTerminator) SourceCharacter)* Commit
+
 SourceCharacter
   = .
 
-Elision
+Elision "elisiion"
   = "," commas:(__ ",")*
 
-integer
+integer "integer"
   = [0-9]
 
-letter
+letter "letter"
   = [a-zA-Z]
 
-defaultValue
-  = ("'".+"'" / integer+)
+defaultValue "defaults"
+  = (anyCharacter / integer+ / "")
+  
+anyCharacter "any characters"
+  = chars:("'" (!"'" SourceCharacter)* "'") {
+    var flattened = flatten(chars);
+//    console.log("Any characters: ", flattened.join(""));
+    return flattened.join("");
+  }
 
-regularIdentifier
+// Any does not consume any input
+any "any"
+  = chars:((!EOS SourceCharacter)* EOS)
+
+regularIdentifier "regular Identifier"
   = [a-zA-Z_]+
+  
+triggerName "trigger name"
+  = regularIdentifier
