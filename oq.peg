@@ -1,12 +1,50 @@
 // Functions ------------------------------
 {
 	var flatten = function (arr) {
-        return arr.reduce(function(a, b) {
-	        return Array.isArray(b) ? a.concat(flatten(b)) : a.concat(b);
-        }, []).filter(function(item) {
-	        return !Array.isArray(item) && item != null && item !== "\n";
-        });
+    return arr.reduce(function(a, b) {
+      return Array.isArray(b) ? a.concat(flatten(b)) : a.concat(b);
+    }, []).filter(function(item) {
+      return !Array.isArray(item) && item != null && item !== "\n";
+    });
+  };
+  var genNumberType = function (type, length, sign) {
+    var numberType = {
+      type: type.toLowerCase(),
+      sign: sign,
+      length: length,
+      min: 0,
+      max: 0,
+      bites: 0
     };
+    switch (numberType.type) {
+      case "int":
+        numberType.min = sign === "unsigned" ? 0 : -2147483648;
+        numberType.max = sign === "unsigned" ? 4294967295 : 2147483647;
+        numberType.bites = 4;
+        break;
+      case "tinyint":
+        numberType.min = sign === "unsigned" ? 0 : -128;
+        numberType.max = sign === "unsigned" ? 255 : 127;
+        numberType.bites = 1;
+        break;
+    }
+    console.log("Generated Number Type: ", numberType);
+    return numberType;
+  }
+
+  var genStringType = function (type, length) {
+    var stringType = {
+      type: type.toLowerCase(),
+      length: length
+    }
+    switch (stringType) {
+      case "varchar":
+        stringType.length = 255
+        break;
+    }
+    console.log("Generated String Type: ", stringType);
+    return stringType;
+  }
 }
 
 
@@ -101,12 +139,14 @@ Elements = (
   Column
 )+
 
-Column = _ ObjectName _ Type _ (
+Column = _ ObjectName _ type:Type _ (
   NullToken
   /
   DefaultToken _ NullToken
   / NotToken _ NullToken _ ( AutoIncrementToken / DefaultToken _ defaultValue  / "" )
-) _ ( Comment / "" ) _ ( "," / "" ) __
+) _ ( Comment / "" ) _ ( "," / "" ) __ {
+  console.log("Type", type);
+}
 
 PrimaryKey
   = token:(PrimaryToken _ KeyToken) _ "(" head:ObjectName tail:( __ "," __  ObjectName)*  ")" ( "," / "" ) __ {
@@ -117,7 +157,6 @@ PrimaryKey
         type: "pk",
         keys: [head, ...rest]
       };
-      console.log("PK Object", pk);
       return pk;
   }
 
@@ -209,22 +248,34 @@ AfterToken = ( "AFTER" / "after" ) { return null; }
 Type "types"
   = Int
   / TinyInt
-  / BigInt
   / VarChar
   / DateTime
   / Date
 
-Int = ( "INT" / "int" ) _ Length _ Sign
-TinyInt = ( "TINYINT" / "tinyint" ) _ Length _ Sign
-BigInt = ( "BIGINT" / "bigint" ) _ Length _ Sign
-VarChar = ( "VARCHAR" / "varchar" ) _ Length
-Date = ( "DATE" / "date" )
-DateTime = ( "DATETIME" / "datetime" )
+Int = type:( "INT" / "int" ) _ length:Length _ sign:Sign {
+  return genNumberType(type, length, sign);
+}
+TinyInt = type:( "TINYINT" / "tinyint" ) _ length:Length _ sign:Sign {
+  return genNumberType(type, length, sign);
+}
+VarChar = type:( "VARCHAR" / "varchar" ) _ length:Length {
+  return genStringType(type, length);
+}
+Date = type:( "DATE" / "date" ) {
+  return {
+    type: type.toLowerCase()
+  }
+}
+DateTime = type:( "DATETIME" / "datetime" ) {
+  return {
+    type: type.toLowerCase()
+  }
+}
 
 // TypeMeta ------------------------------
 
-Length "length of value" = ( "(" integer+ ")" / "" )
-Sign "signed/unsigned" = ( "UNSIGNED" / "unsigned" / "" )
+Length "length of value" = ( "(" length:integer+ ")" / "" ) { return length === "" ? 0 : length; }
+Sign "signed/unsigned" = sign:( "UNSIGNED" / "unsigned" / "" ) { return sign === "" ? "signed" : "unsigned"; }
 
 // Indentifiers ------------------------------
 ObjectName "identifier" = name:( "`" regularIdentifier "`" / regularIdentifier ) {
