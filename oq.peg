@@ -155,7 +155,7 @@ CreateTableStatement
   wr __ EngineToken _ "=" _ engines _ ( AutoIncrementToken "=" integer / "" ) _ ( DefaultToken _ CharsetToken "=" charsets / "")
   EOS {
     var fields = elements.filter(function(element) {
-      return element.type !== "pk" && element.type !== "fk" && element.type !== "index";
+      return element.type !== "pk" && element.type !== "constraint" && element.type !== "index";
     });
     var primaryKey = elements.filter(function(element){
       return element.type === "pk";
