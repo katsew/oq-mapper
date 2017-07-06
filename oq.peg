@@ -148,8 +148,28 @@ CreateTableStatement
     __ elements:Elements __
   wr __ EngineToken _ "=" _ engines _ ( AutoIncrementToken "=" integer / "" ) _ ( DefaultToken _ CharsetToken "=" charsets / "")
   EOS {
+    var fields = elements.filter(function(element) {
+      return element.type !== "pk" && element.type !== "fk" && element.type !== "index";
+    });
+    var primaryKey = elements.filter(function(element){
+      return element.type === "pk";
+    });
+    var foreignKey = elements.filter(function(element) {
+      var type = element.type;
+      type === "constraint" && delete element.type; // Be careful with side effects!
+      return type === "constraint";
+    });
+    var index = elements.filter(function(element) {
+      var type = element.type;
+      type === "index" && delete element.type; // Be careful with side effects!
+      return type === "index";
+    });
+    if (primaryKey.length > 1) { throw new Error("Primary key must be only 1."); }
     var mapped = Object.assign({}, schema, {
-      fields: elements
+      pk: primaryKey[0]["keys"],
+      fields: fields,
+      constraint: foreignKey,
+      index: index
     });
     console.log("Result:", mapped);
     return mapped;
@@ -200,28 +220,26 @@ Column = _ fieldName:ObjectName _ type:Type _ meta:(
 */
 
 Column = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ DefaultToken _ defaultVal:defaultValue _ comment:( Comment / "" ) _ ( "," / "" ) __ {
-  var column = {
+  var column = Object.assign({
     name: fieldName,
-    type: type,
     default: defaultVal,
     autoIncrement: true,
     meta: {
       comment: comment
     }
-  };
+  }, type);
   return column;
 }
 
 AutoIncrementColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ AutoIncrementToken _ comment:( Comment / "" ) _ ( "," / "" ) __ {
-  var column = {
+  var column = Object.assign({
     name: fieldName,
-    type: type,
     default: null,
     autoIncrement: true,
     meta: {
       comment: comment
     }
-  };
+  }, type) ;
   return column;
 }
 
@@ -240,15 +258,14 @@ NotNullColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ comm
       zeroValue = "CURRENT_TIMESTAMP"; // Currently use CURRENT_TIMESTAMP
       break;
   }
-  var column = {
+  var column = Object.assign({
     name: fieldName,
-    type: type,
     default: zeroValue,
     autoIncrement: false,
     meta: {
       comment: comment
     }
-  };
+  }, type);
   return column;
 }
 
@@ -257,7 +274,7 @@ NullColumn = _ fieldName:ObjectName _ type:Type _ meta:(
   NullToken
   / DefaultToken _ NullToken
 ) _ comment:( Comment / "" ) _ ( "," / "" ) __ {
-  var column = {
+  var column = Object.assign({
     name: fieldName,
     type: type,
     default: null,
@@ -265,7 +282,7 @@ NullColumn = _ fieldName:ObjectName _ type:Type _ meta:(
     meta: {
       comment: comment
     }
-  };
+  }, type);
   return column;
 }
 
