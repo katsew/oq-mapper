@@ -8,6 +8,17 @@
       return !Array.isArray(item) && item != null && item !== "\n";
     });
   };
+  
+  var parseComment = function(comment) {
+  var matches = comment.match(/`(.*)`/g);
+    var meta = matches != null ? matches.map(function(item) {
+      return item.replace(/`/g, "").replace(/\\n/g, ";").split(";").filter(function(item) {
+        return item.length > 0;
+      });
+    }) : [];
+    meta.length > 0 && console.log("Meta: ", meta);
+    return flatten(meta);
+  }
   var genNumberType = function (type, length, sign) {
     var numberType = {
       type: type.toLowerCase(),
@@ -29,7 +40,6 @@
         numberType.bites = 1;
         break;
     }
-//    console.log("Generated Number Type: ", numberType);
     return numberType;
   }
 
@@ -43,9 +53,9 @@
         stringType.length = 255
         break;
     }
-//    console.log("Generated String Type: ", stringType);
     return stringType;
   }
+    
   var currentTimeStamp = function() {
     var date = new Date();
     var year = date.getFullYear();
@@ -55,6 +65,24 @@
     var minutes = ("00" + date.getMinutes()).slice(-2);
     var seconds = ("00" + date.getSeconds()).slice(-2);
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  }
+  
+  var flattenParams = function(head, tail) {
+    var rest = tail.map(function(item) {
+	  return item[item.length - 1];
+    });
+    return [head, ...rest];
+  }
+  
+  var genIndex = function(key, head, tail, isUnique) {
+    var keys = flattenParams(head, tail);
+    var index = {
+      type: "index",
+      name: key,
+      keys: keys,
+      unique: isUnique
+    };
+    return index;
   }
 }
 
@@ -117,12 +145,10 @@ CreateTableStatement
     __ elements:Elements __
   wr __ EngineToken _ "=" _ engines _ ( AutoIncrementToken "=" integer / "" ) _ ( DefaultToken _ CharsetToken "=" charsets / "")
   EOS {
-    console.log("Schema", schema);
-    console.log("Elements",  elements);
     var mapped = Object.assign({}, schema, {
       fields: elements
     });
-    console.log(mapped);
+    console.log("Result:", mapped);
     return mapped;
   }
 
@@ -137,7 +163,9 @@ DelimiterStatement = DelimiterToken any  { return null; }
 
 //// Comment
 Comment "comment" = CommentToken _ comment:anyCharacter {
-  return comment;
+  var replaced = comment.replace(/'/g, "").replace(/"/g, "'");
+  console.log("Comment", replaced);
+  return replaced;
 }
 
 //// Column
@@ -170,7 +198,7 @@ Column = _ fieldName:ObjectName _ type:Type _ meta:(
 
 Column = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ DefaultToken _ defaultVal:defaultValue _ comment:( Comment / "" ) _ ( "," / "" ) __ {
   var column = {
-    name: fieldName["name"],
+    name: fieldName,
     type: type,
     default: defaultVal,
     autoIncrement: true,
@@ -178,13 +206,12 @@ Column = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ DefaultToke
       comment: comment
     }
   };
-  console.log(column);
   return column;
 }
 
 AutoIncrementColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ AutoIncrementToken _ comment:( Comment / "" ) _ ( "," / "" ) __ {
   var column = {
-    name: fieldName["name"],
+    name: fieldName,
     type: type,
     default: null,
     autoIncrement: true,
@@ -192,7 +219,6 @@ AutoIncrementColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken 
       comment: comment
     }
   };
-  console.log(column);
   return column;
 }
 
@@ -212,15 +238,14 @@ NotNullColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ comm
       break;
   }
   var column = {
-    name: fieldName["name"],
+    name: fieldName,
     type: type,
     default: zeroValue,
-    autoIncrement: true,
+    autoIncrement: false,
     meta: {
       comment: comment
     }
   };
-  console.log(column);
   return column;
 }
 
@@ -230,7 +255,7 @@ NullColumn = _ fieldName:ObjectName _ type:Type _ meta:(
   / DefaultToken _ NullToken
 ) _ comment:( Comment / "" ) _ ( "," / "" ) __ {
   var column = {
-    name: fieldName["name"],
+    name: fieldName,
     type: type,
     default: null,
     autoIncrement: false,
@@ -238,30 +263,33 @@ NullColumn = _ fieldName:ObjectName _ type:Type _ meta:(
       comment: comment
     }
   };
-  console.log(column);
   return column;
 }
 
 PrimaryKey
   = token:(PrimaryToken _ KeyToken) _ "(" head:ObjectName tail:( __ "," __  ObjectName)*  ")" ( "," / "" ) __ {
-      var rest = tail.map(function(item) {
-        return item[item.length - 1];
-      });
+      var rest = flattenParams(head, tail);
       var pk = {
         type: "pk",
-        keys: [head, ...rest]
+        keys: rest
       };
       return pk;
   }
 
-Key
-  = KeyToken _ ObjectName _ "(" ObjectName ")"  ( "," / "" ) __
-
 Index
-  = IndexToken _ ObjectName _ "(" ObjectName _ ( AscToken / DescToken ) ")" ( "," / "" ) __
-
+  = IndexToken _ identifier:ObjectName _ "(" head:ObjectName tail:( __ "," __  ObjectName)* _ ( AscToken / DescToken / "" ) ")" ( "," / "" ) __ {
+      return genIndex(identifier, head, tail, false);
+  }
+  
+Key
+  = KeyToken _ identifier:ObjectName _ "(" head:ObjectName tail:( __ "," __  ObjectName)* _ ( AscToken / DescToken / "" ) ")" ( "," / "" ) __ {
+    return genIndex(identifier, head, tail, false);
+  }
+  
 UniqueIndex
-  = UniqueToken _ IndexToken _ ObjectName _ "(" ObjectName _ ( AscToken / DescToken ) ")" ( "," / "" ) __
+  = UniqueToken _ IndexToken _ identifier:ObjectName _ "(" head:ObjectName tail:( __ "," __  ObjectName)* _ ( AscToken / DescToken / "" ) ")" ( "," / "" ) __ {
+    return genIndex(identifier, head, tail, true);
+  }
 
 Constraint
   = ConstraintToken _ ObjectName _ 
@@ -374,13 +402,13 @@ Sign "signed/unsigned" = sign:( "UNSIGNED" / "unsigned" / "" ) { return sign ===
 // Indentifiers ------------------------------
 ObjectName "identifier" = name:( "`" regularIdentifier "`" / regularIdentifier ) {
   var objectName = Array.isArray(name) ? name.join("").replace(/`/g, "").split(",").join("") : name.replace(/`/g, "").split(",").join("");
-  return { name: objectName };
+  return objectName;
 }
 TableName "table name" = identifier:( ObjectName "." ObjectName / ObjectName ) {
   var ret = Array.isArray(identifier) ? {
-    dbName: identifier[0]["name"],
-    tableName: identifier[2]["name"]
-  } : { dbName: "", tableName: identifier["name"] }
+    dbName: identifier[0],
+    tableName: identifier[2]
+  } : { dbName: "", tableName: identifier }
   return ret;
 }
 
@@ -480,7 +508,17 @@ letter "letter"
   = [a-zA-Z]
 
 defaultValue "defaults"
-  = (anyCharacter / integer+ / "")
+  = d:(anyCharacter / integer+ / "") {
+  	var val = null;
+    if (Array.isArray(d)) {
+      val = flatten(d);
+    } else if (typeof d === "string") {
+      val = d.replace(/'/g, "");
+    } else {
+      throw new Error("Unexpected type found while processing defaultValue.");
+    }
+    return val;
+  }
 
 anyCharacter "any characters"
   = chars:("'" (!"'" SourceCharacter)* "'") {
