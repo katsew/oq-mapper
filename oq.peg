@@ -10,11 +10,14 @@
   };
   
   var parseComment = function(comment) {
-  var matches = comment.match(/`(.*)`/g);
+    var matches = comment.match(/`(.*)`/g);
     var meta = matches != null ? matches.map(function(item) {
-      return item.replace(/`/g, "").replace(/\\n/g, ";").split(";").filter(function(item) {
-        return item.length > 0;
-      });
+      return item.replace(/`/g, "")
+        .replace(/\\n/g, ";")
+        .split(";")
+        .filter(function(item) {
+          return item.length > 0;
+        });
     }) : [];
     meta.length > 0 && console.log("Meta: ", meta);
     return flatten(meta);
@@ -292,11 +295,27 @@ UniqueIndex
   }
 
 Constraint
-  = ConstraintToken _ ObjectName _ 
-  ForeignToken _ KeyToken _ "(" ObjectName ")" _
-  ReferencesToken _ ObjectName _ "(" ObjectName ")" _
-  OnToken _ DeleteToken _ ( NoToken _ ActionToken / "" ) _
-  OnToken _ UpdateToken _ ( NoToken _ ActionToken / "" ) ( "," / "" ) __
+  = ConstraintToken _ name:ObjectName _ 
+  ForeignToken _ KeyToken _ "(" ihead:ObjectName itail:( __ "," __  ObjectName)* ")" _
+  ReferencesToken _ fk:ObjectName _ "(" rhead:ObjectName rtail:( __ "," __  ObjectName)* ")" _
+  ( OnToken _ DeleteToken _ ForeignKeyOnAction / "" ) _
+  ( OnToken _ UpdateToken _ ForeignKeyOnAction ( "," / "" ) / "" ) __ {
+    var identifiers = flattenParams(ihead, itail);
+    var refs = flattenParams(rhead, rtail);
+    return {
+      type: "constraint",
+      name: name,
+      keys: identifiers,
+      refTable: fk,
+      refKeys: refs
+    };
+  }
+
+ForeignKeyOnAction
+  = NoToken _ ActionToken
+  / CascadeToken
+  / SetToken _ NullToken
+  / ""
 
 // Tokens ------------------------------
 
@@ -364,6 +383,8 @@ CommentToken = ( "COMMENT" / "comment" )
 VarToken = ("@") 
 BeforeToken = ( "BEFORE" / "before" ) 
 AfterToken = ( "AFTER" / "after" ) 
+RestrictToken = ( "RESTRICT" / "restrict" )
+CascadeToken = ( "CASCADE" / "cascade" )
 
 // Types ------------------------------
 
