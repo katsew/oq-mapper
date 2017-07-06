@@ -1,6 +1,7 @@
 // Functions ------------------------------
 {
 	var flatten = function (arr) {
+    if (arr == null) { return null; }
     return arr.reduce(function(a, b) {
       return Array.isArray(b) ? a.concat(flatten(b)) : a.concat(b);
     }, []).filter(function(item) {
@@ -28,7 +29,7 @@
         numberType.bites = 1;
         break;
     }
-    console.log("Generated Number Type: ", numberType);
+//    console.log("Generated Number Type: ", numberType);
     return numberType;
   }
 
@@ -42,7 +43,7 @@
         stringType.length = 255
         break;
     }
-    console.log("Generated String Type: ", stringType);
+//    console.log("Generated String Type: ", stringType);
     return stringType;
   }
 }
@@ -102,15 +103,18 @@ CreateTableStatement
     IfToken _ ExistsToken
     /
     ""
-  ) _ head:TableName _ wl
+  ) _ schema:TableName _ wl
     __ elements:Elements __
   wr __ EngineToken _ "=" _ engines _ ( AutoIncrementToken "=" integer / "" ) _ ( DefaultToken _ CharsetToken "=" charsets / "")
   EOS {
-    console.log("HEAD", head);
+    console.log("Schema", schema);
     console.log("Elements",  elements);
-    return elements;
+    var mapped = Object.assign({}, schema, {
+      fields: elements
+    });
+    console.log(mapped);
+    return mapped;
   }
-
 
 AlterStatement = AlterToken any { return null; }
 DropStatement = DropToken any  { return null; }
@@ -122,7 +126,9 @@ DelimiterStatement = DelimiterToken any  { return null; }
 // Combinations
 
 //// Comment
-Comment "comment" = CommentToken _ anyCharacter
+Comment "comment" = CommentToken _ comment:anyCharacter {
+  return comment;
+}
 
 //// Column
 Elements = (
@@ -136,16 +142,94 @@ Elements = (
   /
   Index
   /
-  Column
+  ( NullColumn / AutoIncrementColumn / Column / NotNullColumn )
 )+
 
-Column = _ ObjectName _ type:Type _ (
-  NullToken
-  /
-  DefaultToken _ NullToken
+/*
+Column = _ fieldName:ObjectName _ type:Type _ meta:(
+  NullToken { return { default: null, autoIncrement: false }; }
+  / DefaultToken _ NullToken { return {default: null, autoIncrement: false }; }
   / NotToken _ NullToken _ ( AutoIncrementToken / DefaultToken _ defaultValue  / "" )
-) _ ( Comment / "" ) _ ( "," / "" ) __ {
+) _ comment:( Comment / "" ) _ ( "," / "" ) __ {
+  console.log("Metadata", meta);
+  console.log("Field Name", fieldName);
+  console.log("Comment", comment);
   console.log("Type", type);
+}
+*/
+
+Column = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ DefaultToken _ defaultVal:defaultValue _ comment:( Comment / "" ) _ ( "," / "" ) __ {
+  var column = {
+    name: fieldName["name"],
+    type: type,
+    default: defaultVal,
+    autoIncrement: true,
+    meta: {
+      comment: comment
+    }
+  };
+  console.log(column);
+  return column;
+}
+
+AutoIncrementColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ AutoIncrementToken _ comment:( Comment / "" ) _ ( "," / "" ) __ {
+  var column = {
+    name: fieldName["name"],
+    type: type,
+    default: null,
+    autoIncrement: true,
+    meta: {
+      comment: comment
+    }
+  };
+  console.log(column);
+  return column;
+}
+
+NotNullColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ comment:( Comment / "" ) _ ( "," / "" ) __ {
+  var zeroValue = null;
+  switch(type["type"]) {
+    case "varchar":
+      zeroValue = "";
+      break;
+    case "int":
+    case "tinyint":
+      zeroValue = 0;
+      break;
+    case "date":
+    case "datetime":
+      zeroValue = new Date();
+      break;
+  }
+  var column = {
+    name: fieldName["name"],
+    type: type,
+    default: zeroValue,
+    autoIncrement: true,
+    meta: {
+      comment: comment
+    }
+  };
+  console.log(column);
+  return column;
+}
+
+
+NullColumn = _ fieldName:ObjectName _ type:Type _ meta:(
+  NullToken
+  / DefaultToken _ NullToken
+) _ comment:( Comment / "" ) _ ( "," / "" ) __ {
+  var column = {
+    name: fieldName["name"],
+    type: type,
+    default: null,
+    autoIncrement: false,
+    meta: {
+      comment: comment
+    }
+  };
+  console.log(column);
+  return column;
 }
 
 PrimaryKey
@@ -178,70 +262,70 @@ Constraint
 
 // Tokens ------------------------------
 
-SetToken = ( "SET" / "set" ) { return null; }
-CreateToken =  ( "CREATE" / "create" ) { return null; }
-RoleToken = ( "ROLE" / "role" ) { return null; }
-DomainToken = ( "DOMAIN" / "domain" ) { return null; }
-TypeToken = ( "TYPE" / "type" ) { return null; }
-TranslationToken = ( "TRANSLATION" / "translation" ) { return null; }
-ModuleToken = ( "MODULE" / "module" ) { return null; }
-ProcedureToken = ( "PROCEDURE" / "procedure" ) { return null; }
-FunctionToken = ( "FUNCTION" / "function" ) { return null; }
-MethodToken = ( "METHOD" / "method" ) { return null; }
-SpecificToken = ( "SPECIFIC" / "specific" ) { return null; }
-AlterToken = ( "ALTER" / "alter" ) { return null; }
-DropToken = ( "DROP" / "drop" ) { return null; }
-TruncateToken = ( "TRUNCATE" / "truncate" ) { return null; }
-StartToken = ( "START" / "start" ) { return null; }
-TransactionToken = ( "TRANSACTION" / "transaction" ) { return null; }
-CommitToken = ( "COMMIT" / "commit" ) { return null; }
-UseToken = ( "USE" / "use" ) { return null; }
-DelimiterToken = ( "DELIMITER" / "delimiter" ) { return null; }
-SchemaToken = ( "SCHEMA" / "schema" ) { return null; }
-DefaultToken = ( "DEFAULT" / "default" ) { return null; }
-CharacterToken = ( "CHARACTER" / "character" ) { return null; }
-TableToken = ( "TABLE" / "table" ) { return null; }
-IfToken = ( "IF" / "if" ) { return null; }
-ElseToken = ( "ELSE" / "else" ) { return null; }
-CaseToken = ( "CASE" / "case" ) { return null; }
-WhenToken = ( "WHEN" / "when" ) { return null; }
-NotToken = ( "NOT" / "not" ) { return null; }
-ExistsToken = ( "EXISTS" / "exists" ) { return null; }
-NullToken = ( "NULL" / "null" ) { return null; }
-PrimaryToken = ( "PRIMARY" / "primary" ) { return null; }
-KeyToken = ( "KEY" / "key" ) { return null; }
-UniqueToken = ( "UNIQUE" / "unique" ) { return null; }
-IndexToken = ( "INDEX" / "index" ) { return null; }
-ConstraintToken = ( "CONSTRAINT" / "constraint" ) { return null; }
-ForeignToken = ( "FOREIGN" / "foreign" ) { return null; }
-ReferencesToken = ( "REFERENCES" / "references" ) { return null; }
-AscToken = ( "ASC" / "asc" ) { return null; }
-DescToken = ( "DESC" / "desc" ) { return null; }
-AutoIncrementToken = ( "AUTO_INCREMENT" / "auto_increment" ) { return null; }
-EngineToken = ( "ENGINE" / "engine" ) { return null; }
-InsertToken = ( "INSERT" / "insert" ) { return null; }
-IntoToken = ( "INTO" / "into" ) { return null; }
-SelectToken = ( "SELECT" / "select" ) { return null; }
-UpdateToken = ( "UPDATE" / "update" ) { return null; }
-DeleteToken = ( "DELETE" / "delete" ) { return null; }
-BeginToken = ( "BEGIN" / "begin" ) { return null; }
-EndToken = ( "END" / "end" ) { return null; }
-JoinToken = ( "JOIN" / "join" ) { return null; }
-LeftToken = ( "LEFT" / "left" ) { return null; }
-RightToken = ( "RIGHT" / "right" ) { return null; }
-InnerToken = ( "INNER" / "inner" ) { return null; }
-OnToken = ( "ON" / "on" ) { return null; }
-WhereToken = ( "WHERE" / "where" ) { return null; }
-InToken = ( "IN" / "in" ) { return null; }
-TriggerToken = ( "TRIGGER" / "trigger" ) { return null; }
-DefinerToken = ( "DEFINER" / "definer" ) { return null; }
-NoToken = ( "NO" / "no" ) { return null; }
-ActionToken = ( "ACTION" / "action" ) { return null; }
-CharsetToken = ( "CHARSET" / "charset" ) { return null; }
-CommentToken = ( "COMMENT" / "comment" ) { return null; }
-VarToken = ("@") { return null; }
-BeforeToken = ( "BEFORE" / "before" ) { return null; }
-AfterToken = ( "AFTER" / "after" ) { return null; }
+SetToken = ( "SET" / "set" ) 
+CreateToken =  ( "CREATE" / "create" )
+RoleToken = ( "ROLE" / "role" )
+DomainToken = ( "DOMAIN" / "domain" )
+TypeToken = ( "TYPE" / "type" )
+TranslationToken = ( "TRANSLATION" / "translation" )
+ModuleToken = ( "MODULE" / "module" )
+ProcedureToken = ( "PROCEDURE" / "procedure" )
+FunctionToken = ( "FUNCTION" / "function" )
+MethodToken = ( "METHOD" / "method" )
+SpecificToken = ( "SPECIFIC" / "specific" ) 
+AlterToken = ( "ALTER" / "alter" )
+DropToken = ( "DROP" / "drop" )
+TruncateToken = ( "TRUNCATE" / "truncate" ) 
+StartToken = ( "START" / "start" )
+TransactionToken = ( "TRANSACTION" / "transaction" )
+CommitToken = ( "COMMIT" / "commit" )
+UseToken = ( "USE" / "use" ) 
+DelimiterToken = ( "DELIMITER" / "delimiter" )
+SchemaToken = ( "SCHEMA" / "schema" ) 
+DefaultToken = ( "DEFAULT" / "default" )
+CharacterToken = ( "CHARACTER" / "character" )
+TableToken = ( "TABLE" / "table" )
+IfToken = ( "IF" / "if" )
+ElseToken = ( "ELSE" / "else" )
+CaseToken = ( "CASE" / "case" )
+WhenToken = ( "WHEN" / "when" )
+NotToken = ( "NOT" / "not" )
+ExistsToken = ( "EXISTS" / "exists" )
+NullToken = ( "NULL" / "null" )
+PrimaryToken = ( "PRIMARY" / "primary" )
+KeyToken = ( "KEY" / "key" )
+UniqueToken = ( "UNIQUE" / "unique" )
+IndexToken = ( "INDEX" / "index" )
+ConstraintToken = ( "CONSTRAINT" / "constraint" )
+ForeignToken = ( "FOREIGN" / "foreign" )
+ReferencesToken = ( "REFERENCES" / "references" )
+AscToken = ( "ASC" / "asc" )
+DescToken = ( "DESC" / "desc" )
+AutoIncrementToken = ( "AUTO_INCREMENT" / "auto_increment" )
+EngineToken = ( "ENGINE" / "engine" )
+InsertToken = ( "INSERT" / "insert" )
+IntoToken = ( "INTO" / "into" )
+SelectToken = ( "SELECT" / "select" )
+UpdateToken = ( "UPDATE" / "update" )
+DeleteToken = ( "DELETE" / "delete" )
+BeginToken = ( "BEGIN" / "begin" )
+EndToken = ( "END" / "end" )
+JoinToken = ( "JOIN" / "join" )
+LeftToken = ( "LEFT" / "left" )
+RightToken = ( "RIGHT" / "right" )
+InnerToken = ( "INNER" / "inner" )
+OnToken = ( "ON" / "on" )
+WhereToken = ( "WHERE" / "where" )
+InToken = ( "IN" / "in" ) 
+TriggerToken = ( "TRIGGER" / "trigger" )
+DefinerToken = ( "DEFINER" / "definer" )
+NoToken = ( "NO" / "no" ) 
+ActionToken = ( "ACTION" / "action" ) 
+CharsetToken = ( "CHARSET" / "charset" ) 
+CommentToken = ( "COMMENT" / "comment" ) 
+VarToken = ("@") 
+BeforeToken = ( "BEFORE" / "before" ) 
+AfterToken = ( "AFTER" / "after" ) 
 
 // Types ------------------------------
 
@@ -287,7 +371,6 @@ TableName "table name" = identifier:( ObjectName "." ObjectName / ObjectName ) {
     dbName: identifier[0]["name"],
     tableName: identifier[2]["name"]
   } : { dbName: "", tableName: identifier["name"] }
-  console.log("Table object: ", ret);
   return ret;
 }
 
@@ -388,9 +471,12 @@ letter "letter"
 
 defaultValue "defaults"
   = (anyCharacter / integer+ / "")
-  
+
 anyCharacter "any characters"
-  = ("'" (!"'" SourceCharacter)* "'") { return null; }
+  = chars:("'" (!"'" SourceCharacter)* "'") {
+	var flattened = flatten(chars);
+    return flattened.join("");
+  }
 
 // Any does not consume any input
 any "any"
