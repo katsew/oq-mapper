@@ -9,17 +9,23 @@
     });
   };
   
-  var parseComment = function(comment) {
+  var parseTagInComment = function(comment) {
     var matches = comment.match(/`(.*)`/g);
     var meta = matches != null ? matches.map(function(item) {
       return item.replace(/`/g, "")
-        .replace(/\\n/g, ";")
-        .split(";")
+        .replace(/'/g, "")
+        .replace(/\\n/g, " ")
+        .split(" ")
         .filter(function(item) {
           return item.length > 0;
+        })
+        .map(function(item) {
+          var splitted = item.split(":");
+          var obj = {};
+          obj[splitted[0]] = splitted[1];
+          return obj;
         });
     }) : [];
-    meta.length > 0 && console.log("Meta: ", meta);
     return flatten(meta);
   }
   var genNumberType = function (type, length, sign) {
@@ -187,8 +193,12 @@ DelimiterStatement = DelimiterToken any  { return null; }
 //// Comment
 Comment "comment" = CommentToken _ comment:anyCharacter {
   var replaced = comment.replace(/'/g, "").replace(/"/g, "'");
-  console.log("Comment", replaced);
-  return replaced;
+  var tag = parseTagInComment(replaced);
+  console.log("Comment", replaced, tag);
+  return {
+   comment: replaced,
+   tags: tag
+ };
 }
 
 //// Column
@@ -206,44 +216,25 @@ Elements = (
   ( NullColumn / AutoIncrementColumn / Column / NotNullColumn )
 )+
 
-/*
-Column = _ fieldName:ObjectName _ type:Type _ meta:(
-  NullToken { return { default: null, autoIncrement: false }; }
-  / DefaultToken _ NullToken { return {default: null, autoIncrement: false }; }
-  / NotToken _ NullToken _ ( AutoIncrementToken / DefaultToken _ defaultValue  / "" )
-) _ comment:( Comment / "" ) _ ( "," / "" ) __ {
-  console.log("Metadata", meta);
-  console.log("Field Name", fieldName);
-  console.log("Comment", comment);
-  console.log("Type", type);
-}
-*/
-
-Column = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ DefaultToken _ defaultVal:defaultValue _ comment:( Comment / "" ) _ ( "," / "" ) __ {
+Column = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ DefaultToken _ defaultVal:defaultValue _ meta:( Comment / "" ) _ ( "," / "" ) __ {
   var column = Object.assign({
     name: fieldName,
     default: defaultVal,
     autoIncrement: true,
-    meta: {
-      comment: comment
-    }
-  }, type);
+  }, type, meta);
   return column;
 }
 
-AutoIncrementColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ AutoIncrementToken _ comment:( Comment / "" ) _ ( "," / "" ) __ {
+AutoIncrementColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ AutoIncrementToken _ meta:( Comment / "" ) _ ( "," / "" ) __ {
   var column = Object.assign({
     name: fieldName,
     default: null,
-    autoIncrement: true,
-    meta: {
-      comment: comment
-    }
-  }, type) ;
+    autoIncrement: true
+  }, type, meta) ;
   return column;
 }
 
-NotNullColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ comment:( Comment / "" ) _ ( "," / "" ) __ {
+NotNullColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ meta:( Comment / "" ) _ ( "," / "" ) __ {
   var zeroValue = null;
   switch(type["type"]) {
     case "varchar":
@@ -262,27 +253,21 @@ NotNullColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ comm
     name: fieldName,
     default: zeroValue,
     autoIncrement: false,
-    meta: {
-      comment: comment
-    }
-  }, type);
+  }, type, meta);
   return column;
 }
 
 
-NullColumn = _ fieldName:ObjectName _ type:Type _ meta:(
+NullColumn = _ fieldName:ObjectName _ type:Type _ (
   NullToken
   / DefaultToken _ NullToken
-) _ comment:( Comment / "" ) _ ( "," / "" ) __ {
+) _ meta:( Comment / "" ) _ ( "," / "" ) __ {
   var column = Object.assign({
     name: fieldName,
     type: type,
     default: null,
-    autoIncrement: false,
-    meta: {
-      comment: comment
-    }
-  }, type);
+    autoIncrement: false
+  }, type, meta);
   return column;
 }
 
