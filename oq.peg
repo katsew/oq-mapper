@@ -46,6 +46,16 @@
 //    console.log("Generated String Type: ", stringType);
     return stringType;
   }
+  var currentTimeStamp = function() {
+    var date = new Date();
+    var year = date.getFullYear();
+    var month = ("00" + date.getMonth()).slice(-2);
+    var day = ("00" + date.getDay()).slice(-2);
+    var hours = ("00" + date.getHours()).slice(-2);
+    var minutes = ("00" + date.getMinutes()).slice(-2);
+    var seconds = ("00" + date.getSeconds()).slice(-2);
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  }
 }
 
 
@@ -198,7 +208,7 @@ NotNullColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ comm
       break;
     case "date":
     case "datetime":
-      zeroValue = new Date();
+      zeroValue = "CURRENT_TIMESTAMP"; // Currently use CURRENT_TIMESTAMP
       break;
   }
   var column = {
