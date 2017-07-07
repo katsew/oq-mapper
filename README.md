@@ -66,12 +66,23 @@ CREATE TABLE `mail` (
 parse that tag, and create object like following.
 
 ```
-"tags": [
+[
+  ...
+  "fields": [
     {
-      "types": "0,1"
-    },
-    {
-      "strategy": "random"
+      "name": "is_sent",
+      ...
+      "comment": "`types:'0, 1' strategy:'random'`",
+      "tags": [
+          {
+            "types": "0,1"
+          },
+          {
+            "strategy": "random"
+          }
+      ]
     }
+  ]
+  ...
 ]
 ```
