@@ -15,7 +15,10 @@
   "keywords": [
     "sql",
     "sql-parser",
-    "parser"
+    "parser",
+    "pegjs",
+    "javascript",
+    "json"
   ],
   "author": "katsew",
   "license": "MIT",
