@@ -51,7 +51,7 @@ This kind of object structure!
 
 # Features
 
-## Parse tag in comments
+## Parse tags in comment
 
 When you add comment with tags, like [Go#StructTag](https://golang.org/pkg/reflect/#example_StructTag), 
 
