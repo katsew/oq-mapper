@@ -53,7 +53,7 @@ This kind of object structure!
 
 ## Parse tag in comments
 
-When you add comment with tags, like [Go#structTag](https://golang.org/pkg/reflect/#example_StructTag), 
+When you add comment with tags, like [Go#StructTag](https://golang.org/pkg/reflect/#example_StructTag), 
 
 ```
 CREATE TABLE `mail` (
