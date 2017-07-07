@@ -1,0 +1,32 @@
+{
+  "name": "oq-mapper",
+  "version": "1.0.0",
+  "description": "Object/Query Mapper for Node.js.",
+  "main": "dist/oq-mapper.js",
+  "types": "types/oq-mapper.d.ts",
+  "scripts": {
+    "postinstall": "npm run build",
+    "build": "pegjs -o dist/oq-mapper.js src/oq-mapper.peg"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/katsew/oq-mapper.git"
+  },
+  "keywords": [
+    "sql",
+    "sql-parser",
+    "parser"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/katsew/oq-mapper/issues"
+  },
+  "homepage": "https://github.com/katsew/oq-mapper#readme",
+  "devDependencies": {
+    "pegjs": "^0.10.0"
+  },
+  "dependencies": {
+    "pegjs": "^0.10.0"
+  }
+}
