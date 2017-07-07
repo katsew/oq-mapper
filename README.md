@@ -48,3 +48,30 @@ This kind of object structure!
 ]
 
 ```
+
+# Features
+
+## Parse tag in comments
+
+When you add comment with tags, like [Go#structTag](https://golang.org/pkg/reflect/#example_StructTag), 
+
+```
+CREATE TABLE `mail` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `is_sent` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '`types:"0,1" strategy:"random"`',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
+
+parse that tag, and create object like following.
+
+```
+"tags": [
+    {
+      "types": "0,1"
+    },
+    {
+      "strategy": "random"
+    }
+]
+```
