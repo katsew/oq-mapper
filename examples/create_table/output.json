@@ -1,0 +1,37 @@
+[
+   {
+      "dbName": "dvd_collection",
+      "tableName": "movies",
+      "pk": [
+         "movie_id"
+      ],
+      "fields": [
+         {
+            "name": "movie_id",
+            "default": null,
+            "autoIncrement": true,
+            "type": "int",
+            "sign": "signed",
+            "length": 0,
+            "min": -2147483648,
+            "max": 2147483647,
+            "bites": 4
+         },
+         {
+            "name": "movie_title",
+            "default": "",
+            "autoIncrement": false,
+            "type": "varchar",
+            "length": 0
+         },
+         {
+            "name": "release_date",
+            "type": "date",
+            "default": null,
+            "autoIncrement": false
+         }
+      ],
+      "constraint": [],
+      "index": []
+   }
+]

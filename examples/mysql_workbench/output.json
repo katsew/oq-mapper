@@ -1,0 +1,254 @@
+[
+   {
+      "dbName": "dvd_collection",
+      "tableName": "movie_categories",
+      "pk": [
+         "category_id"
+      ],
+      "fields": [
+         {
+            "name": "category_id",
+            "default": "AUTO_INCREMENT",
+            "autoIncrement": true,
+            "type": "int",
+            "sign": "unsigned",
+            "length": 0,
+            "min": 0,
+            "max": 4294967295,
+            "bites": 4
+         },
+         {
+            "name": "category_name",
+            "default": "",
+            "autoIncrement": true,
+            "type": "varchar",
+            "length": 0
+         },
+         {
+            "name": "category_description",
+            "default": "",
+            "autoIncrement": true,
+            "type": "varchar",
+            "length": 0
+         },
+         {
+            "name": "created_at",
+            "default": [
+               "DEFAULT",
+               null,
+               "CURRENT_TIMESTAMP,"
+            ],
+            "autoIncrement": true,
+            "type": "datetime"
+         },
+         {
+            "name": "updated_at",
+            "default": [
+               "DEFAULT",
+               null,
+               "CURRENT_TIMESTAMP,"
+            ],
+            "autoIncrement": true,
+            "type": "datetime"
+         }
+      ],
+      "constraint": [],
+      "index": []
+   },
+   {
+      "dbName": "dvd_collection",
+      "tableName": "movies",
+      "pk": [
+         "movie_id"
+      ],
+      "fields": [
+         {
+            "name": "movie_id",
+            "default": "AUTO_INCREMENT",
+            "autoIncrement": true,
+            "type": "int",
+            "sign": "signed",
+            "length": 0,
+            "min": -2147483648,
+            "max": 2147483647,
+            "bites": 4
+         },
+         {
+            "name": "movie_title",
+            "default": "",
+            "autoIncrement": true,
+            "type": "varchar",
+            "length": 0
+         },
+         {
+            "name": "movie_category_id",
+            "default": "",
+            "autoIncrement": true,
+            "type": "int",
+            "sign": "unsigned",
+            "length": 0,
+            "min": 0,
+            "max": 4294967295,
+            "bites": 4,
+            "comment": "Movie’s category like “Fantasy” , “Documentary”…\n`”unknown_category”:0`",
+            "tags": [
+               {
+                  "”unknown_category”": "0"
+               }
+            ]
+         },
+         {
+            "name": "release_date",
+            "default": "",
+            "autoIncrement": true,
+            "type": "date"
+         }
+      ],
+      "constraint": [
+         {
+            "name": "fk_movies_movie_categories",
+            "keys": [
+               "movie_category_id"
+            ],
+            "refTable": {
+               "tableName": "dvd_collection",
+               "columnName": "movie_categories"
+            },
+            "refKeys": [
+               "category_id"
+            ]
+         }
+      ],
+      "index": [
+         {
+            "name": "fk_movies_movie_categories_idx",
+            "keys": [
+               "movie_category_id"
+            ],
+            "unique": false
+         }
+      ]
+   },
+   {
+      "dbName": "customer",
+      "tableName": "customers",
+      "pk": [
+         "customer_id"
+      ],
+      "fields": [
+         {
+            "name": "customer_id",
+            "default": "AUTO_INCREMENT",
+            "autoIncrement": true,
+            "type": "int",
+            "sign": "unsigned",
+            "length": 0,
+            "min": 0,
+            "max": 4294967295,
+            "bites": 4
+         },
+         {
+            "name": "customer_name",
+            "default": "",
+            "autoIncrement": true,
+            "type": "varchar",
+            "length": 0
+         },
+         {
+            "name": "address1",
+            "default": "",
+            "autoIncrement": true,
+            "type": "varchar",
+            "length": 0
+         },
+         {
+            "name": "address2",
+            "default": "",
+            "autoIncrement": true,
+            "type": "varchar",
+            "length": 0
+         },
+         {
+            "name": "phone_number",
+            "default": "",
+            "autoIncrement": true,
+            "type": "int",
+            "sign": "unsigned",
+            "length": 0,
+            "min": 0,
+            "max": 4294967295,
+            "bites": 4
+         },
+         {
+            "name": "created_at",
+            "default": "",
+            "autoIncrement": true,
+            "type": "datetime"
+         },
+         {
+            "name": "updated_at",
+            "default": "",
+            "autoIncrement": true,
+            "type": "datetime"
+         }
+      ],
+      "constraint": [],
+      "index": [
+         {
+            "name": "idx_01",
+            "keys": [
+               "phone_number"
+            ],
+            "unique": false
+         },
+         {
+            "name": "idx_02",
+            "keys": [
+               "created_at"
+            ],
+            "unique": false
+         }
+      ]
+   },
+   {
+      "dbName": "customer",
+      "tableName": "customers_cards",
+      "pk": [
+         "card_id"
+      ],
+      "fields": [
+         {
+            "name": "card_id",
+            "default": "AUTO_INCREMENT",
+            "autoIncrement": true,
+            "type": "int",
+            "sign": "unsigned",
+            "length": 0,
+            "min": 0,
+            "max": 4294967295,
+            "bites": 4
+         },
+         {
+            "name": "customer_id",
+            "default": "",
+            "autoIncrement": true,
+            "type": "int",
+            "sign": "unsigned",
+            "length": 0,
+            "min": 0,
+            "max": 4294967295,
+            "bites": 4
+         }
+      ],
+      "constraint": [],
+      "index": [
+         {
+            "name": "customer_id_UNIQUE",
+            "keys": [
+               "customer_id"
+            ],
+            "unique": true
+         }
+      ]
+   }
+]
