@@ -129,6 +129,7 @@ Statement
   / TransactionStatement
   / UseStatement
   / DelimiterStatement
+  / ShowStatement
 
 SetStatement = SetToken _ any  { return null; }
 CreateStatement
@@ -187,6 +188,7 @@ TruncateStatement = TruncateToken any  { return null; }
 TransactionStatement = StartToken TransactionToken CommitToken EOS  { return null; }
 UseStatement = UseToken any  { return null; }
 DelimiterStatement = DelimiterToken any  { return null; }
+ShowStatement = ShowToken any { return null; }
 
 // Combinations
 
@@ -213,10 +215,20 @@ Elements = (
   /
   Index
   /
-  ( NullColumn / AutoIncrementColumn / Column / NotNullColumn )
+  Column
 )+
 
-Column = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ DefaultToken _ defaultVal:defaultValue _ meta:( Comment / "" ) _ ( "," / "" ) __ {
+// Column = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ DefaultToken _ defaultVal:defaultValue _ meta:( Comment / "" ) _ ( "," / "" ) __ {
+//   var column = Object.assign({
+//     name: fieldName,
+//     default: defaultVal,
+//     autoIncrement: true,
+//   }, type, meta);
+//   return column;
+// }
+
+Column = _ fieldName:ObjectName _ type:Type _ NullRestriction _ defaultVal:( DefaultToken _ anyInput / AutoIncrementToken / "" ) _ meta:( Comment / "" ) _ ( "," / "" ) __ {
+  console.log(defaultVal);
   var column = Object.assign({
     name: fieldName,
     default: defaultVal,
@@ -225,50 +237,55 @@ Column = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ DefaultToke
   return column;
 }
 
-AutoIncrementColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ AutoIncrementToken _ meta:( Comment / "" ) _ ( "," / "" ) __ {
-  var column = Object.assign({
-    name: fieldName,
-    default: null,
-    autoIncrement: true
-  }, type, meta) ;
-  return column;
-}
+// AutoIncrementColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ AutoIncrementToken _ meta:( Comment / "" ) _ ( "," / "" ) __ {
+//   var column = Object.assign({
+//     name: fieldName,
+//     default: null,
+//     autoIncrement: true
+//   }, type, meta) ;
+//   return column;
+// }
 
-NotNullColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ meta:( Comment / "" ) _ ( "," / "" ) __ {
-  var zeroValue = null;
-  switch(type["type"]) {
-    case "varchar":
-      zeroValue = "";
-      break;
-    case "int":
-    case "tinyint":
-      zeroValue = 0;
-      break;
-    case "date":
-    case "datetime":
-      zeroValue = "CURRENT_TIMESTAMP"; // Currently use CURRENT_TIMESTAMP
-      break;
-  }
-  var column = Object.assign({
-    name: fieldName,
-    default: zeroValue,
-    autoIncrement: false,
-  }, type, meta);
-  return column;
-}
+// NotNullColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ meta:( Comment / "" ) _ ( "," / "" ) __ {
+//   var zeroValue = null;
+//   switch(type["type"]) {
+//     case "varchar":
+//       zeroValue = "";
+//       break;
+//     case "int":
+//     case "tinyint":
+//       zeroValue = 0;
+//       break;
+//     case "date":
+//     case "datetime":
+//       zeroValue = "CURRENT_TIMESTAMP"; // Currently use CURRENT_TIMESTAMP
+//       break;
+//   }
+//   var column = Object.assign({
+//     name: fieldName,
+//     default: zeroValue,
+//     autoIncrement: false,
+//   }, type, meta);
+//   return column;
+// }
+
+// NullColumn = _ fieldName:ObjectName _ type:Type _ (
+//   NullToken
+//   / DefaultToken _ NullToken
+// ) _ meta:( Comment / "" ) _ ( "," / "" ) __ {
+//   var column = Object.assign({
+//     name: fieldName,
+//     type: type,
+//     default: null,
+//     autoIncrement: false
+//   }, type, meta);
+//   return column;
+// }
 
 
-NullColumn = _ fieldName:ObjectName _ type:Type _ (
-  NullToken
-  / DefaultToken _ NullToken
-) _ meta:( Comment / "" ) _ ( "," / "" ) __ {
-  var column = Object.assign({
-    name: fieldName,
-    type: type,
-    default: null,
-    autoIncrement: false
-  }, type, meta);
-  return column;
+NullRestriction = _ head:( NotToken / "" ) _ tail:( NullToken / "" ) _ {
+  console.log(head, tail);
+  return null;
 }
 
 PrimaryKey
@@ -297,10 +314,10 @@ UniqueIndex
   }
 
 Constraint
-  = ConstraintToken _ name:ObjectName _ 
-  ForeignToken _ KeyToken _ "(" ihead:ObjectName itail:( __ "," __  ObjectName)* ")" _
-  ReferencesToken _ fk:ObjectName _ "(" rhead:ObjectName rtail:( __ "," __  ObjectName)* ")" _
-  ( OnToken _ DeleteToken _ ForeignKeyOnAction / "" ) _
+  = ConstraintToken _ name:ObjectName __
+  ForeignToken _ KeyToken _ "(" ihead:ObjectName itail:( __ "," __  ObjectName)* ")" __
+  ReferencesToken _ fk:ColumnName _ "(" rhead:ObjectName rtail:( __ "," __  ObjectName)* ")" __
+  ( OnToken _ DeleteToken _ ForeignKeyOnAction / "" ) __
   ( OnToken _ UpdateToken _ ForeignKeyOnAction ( "," / "" ) / "" ) __ {
     var identifiers = flattenParams(ihead, itail);
     var refs = flattenParams(rhead, rtail);
@@ -321,72 +338,74 @@ ForeignKeyOnAction
 
 // Tokens ------------------------------
 
-SetToken = ( "SET" / "set" ) 
-CreateToken =  ( "CREATE" / "create" )
-RoleToken = ( "ROLE" / "role" )
-DomainToken = ( "DOMAIN" / "domain" )
-TypeToken = ( "TYPE" / "type" )
-TranslationToken = ( "TRANSLATION" / "translation" )
-ModuleToken = ( "MODULE" / "module" )
-ProcedureToken = ( "PROCEDURE" / "procedure" )
-FunctionToken = ( "FUNCTION" / "function" )
-MethodToken = ( "METHOD" / "method" )
-SpecificToken = ( "SPECIFIC" / "specific" ) 
-AlterToken = ( "ALTER" / "alter" )
-DropToken = ( "DROP" / "drop" )
-TruncateToken = ( "TRUNCATE" / "truncate" ) 
-StartToken = ( "START" / "start" )
-TransactionToken = ( "TRANSACTION" / "transaction" )
-CommitToken = ( "COMMIT" / "commit" )
-UseToken = ( "USE" / "use" ) 
-DelimiterToken = ( "DELIMITER" / "delimiter" )
-SchemaToken = ( "SCHEMA" / "schema" ) 
-DefaultToken = ( "DEFAULT" / "default" )
-CharacterToken = ( "CHARACTER" / "character" )
-TableToken = ( "TABLE" / "table" )
-IfToken = ( "IF" / "if" )
-ElseToken = ( "ELSE" / "else" )
-CaseToken = ( "CASE" / "case" )
-WhenToken = ( "WHEN" / "when" )
-NotToken = ( "NOT" / "not" )
-ExistsToken = ( "EXISTS" / "exists" )
-NullToken = ( "NULL" / "null" )
-PrimaryToken = ( "PRIMARY" / "primary" )
-KeyToken = ( "KEY" / "key" )
-UniqueToken = ( "UNIQUE" / "unique" )
-IndexToken = ( "INDEX" / "index" )
-ConstraintToken = ( "CONSTRAINT" / "constraint" )
-ForeignToken = ( "FOREIGN" / "foreign" )
-ReferencesToken = ( "REFERENCES" / "references" )
-AscToken = ( "ASC" / "asc" )
-DescToken = ( "DESC" / "desc" )
-AutoIncrementToken = ( "AUTO_INCREMENT" / "auto_increment" )
-EngineToken = ( "ENGINE" / "engine" )
-InsertToken = ( "INSERT" / "insert" )
-IntoToken = ( "INTO" / "into" )
-SelectToken = ( "SELECT" / "select" )
-UpdateToken = ( "UPDATE" / "update" )
-DeleteToken = ( "DELETE" / "delete" )
-BeginToken = ( "BEGIN" / "begin" )
-EndToken = ( "END" / "end" )
-JoinToken = ( "JOIN" / "join" )
-LeftToken = ( "LEFT" / "left" )
-RightToken = ( "RIGHT" / "right" )
-InnerToken = ( "INNER" / "inner" )
-OnToken = ( "ON" / "on" )
-WhereToken = ( "WHERE" / "where" )
-InToken = ( "IN" / "in" ) 
-TriggerToken = ( "TRIGGER" / "trigger" )
-DefinerToken = ( "DEFINER" / "definer" )
-NoToken = ( "NO" / "no" ) 
-ActionToken = ( "ACTION" / "action" ) 
-CharsetToken = ( "CHARSET" / "charset" ) 
-CommentToken = ( "COMMENT" / "comment" ) 
-VarToken = ("@") 
-BeforeToken = ( "BEFORE" / "before" ) 
-AfterToken = ( "AFTER" / "after" ) 
-RestrictToken = ( "RESTRICT" / "restrict" )
-CascadeToken = ( "CASCADE" / "cascade" )
+SetToken "set token" = ( "SET" / "set" ) 
+CreateToken "create token" =  ( "CREATE" / "create" )
+RoleToken "role token" = ( "ROLE" / "role" )
+DomainToken "domain token" = ( "DOMAIN" / "domain" )
+TypeToken "type token" = ( "TYPE" / "type" )
+TranslationToken "translation token" = ( "TRANSLATION" / "translation" )
+ModuleToken "module token" = ( "MODULE" / "module" )
+ProcedureToken "procedure token" = ( "PROCEDURE" / "procedure" )
+FunctionToken "function token" = ( "FUNCTION" / "function" )
+MethodToken "method token" = ( "METHOD" / "method" )
+SpecificToken "specific token" = ( "SPECIFIC" / "specific" ) 
+AlterToken "alter token" = ( "ALTER" / "alter" )
+DropToken "drop token" = ( "DROP" / "drop" )
+TruncateToken "truncate token" = ( "TRUNCATE" / "truncate" ) 
+StartToken "start token" = ( "START" / "start" )
+TransactionToken "transaction token" = ( "TRANSACTION" / "transaction" )
+CommitToken "commit token" = ( "COMMIT" / "commit" )
+UseToken "use token" = ( "USE" / "use" ) 
+DelimiterToken "delimiter token" = ( "DELIMITER" / "delimiter" )
+SchemaToken "schema token" = ( "SCHEMA" / "schema" ) 
+DefaultToken "default token" = ( "DEFAULT" / "default" )
+CharacterToken "character token" = ( "CHARACTER" / "character" )
+TableToken "table token" = ( "TABLE" / "table" )
+IfToken "if token" = ( "IF" / "if" )
+ElseToken "else token" = ( "ELSE" / "else" )
+CaseToken "case token" = ( "CASE" / "case" )
+WhenToken "when token" = ( "WHEN" / "when" )
+NotToken "not token" = ( "NOT" / "not" )
+ExistsToken "exists token" = ( "EXISTS" / "exists" )
+NullToken "null token" = ( "NULL" / "null" )
+PrimaryToken "primary token" = ( "PRIMARY" / "primary" )
+KeyToken "key token" = ( "KEY" / "key" )
+UniqueToken "unique token" = ( "UNIQUE" / "unique" )
+IndexToken "index token" = ( "INDEX" / "index" )
+ConstraintToken "constraint token" = ( "CONSTRAINT" / "constraint" )
+ForeignToken "foreign token" = ( "FOREIGN" / "foreign" )
+ReferencesToken "references token" = ( "REFERENCES" / "references" )
+AscToken "asc token" = ( "ASC" / "asc" )
+DescToken "desc token" = ( "DESC" / "desc" )
+AutoIncrementToken "auto increment token" = ( "AUTO_INCREMENT" / "auto_increment" )
+EngineToken "engine token" = ( "ENGINE" / "engine" )
+InsertToken "insert token" = ( "INSERT" / "insert" )
+IntoToken "into token" = ( "INTO" / "into" )
+SelectToken "select token" = ( "SELECT" / "select" )
+UpdateToken "update token" = ( "UPDATE" / "update" )
+DeleteToken "delete token" = ( "DELETE" / "delete" )
+BeginToken "begin token" = ( "BEGIN" / "begin" )
+EndToken "end token" = ( "END" / "end" )
+JoinToken "join token" = ( "JOIN" / "join" )
+LeftToken "left token" = ( "LEFT" / "left" )
+RightToken "right token" = ( "RIGHT" / "right" )
+InnerToken "inner token" = ( "INNER" / "inner" )
+OnToken "on token" = ( "ON" / "on" )
+WhereToken "where token" = ( "WHERE" / "where" )
+InToken "in token" = ( "IN" / "in" ) 
+TriggerToken "trigger token" = ( "TRIGGER" / "trigger" )
+DefinerToken "definer token" = ( "DEFINER" / "definer" )
+NoToken "no token" = ( "NO" / "no" ) 
+ActionToken "action token" = ( "ACTION" / "action" ) 
+CharsetToken "charset token" = ( "CHARSET" / "charset" ) 
+CommentToken "comment token" = ( "COMMENT" / "comment" ) 
+VarToken "var token" = ("@") 
+BeforeToken "before token" = ( "BEFORE" / "before" ) 
+AfterToken "after token" = ( "AFTER" / "after" ) 
+RestrictToken "restrict token" = ( "RESTRICT" / "restrict" )
+CascadeToken "cascade token" = ( "CASCADE" / "cascade" )
+ShowToken "show token" = ( "SHOW" / "show" )
+WarningsToken "warning token" = ( "WARNINGS" / "warnings")
 
 // Types ------------------------------
 
@@ -427,6 +446,15 @@ ObjectName "identifier" = name:( "`" regularIdentifier "`" / regularIdentifier )
   var objectName = Array.isArray(name) ? name.join("").replace(/`/g, "").split(",").join("") : name.replace(/`/g, "").split(",").join("");
   return objectName;
 }
+
+ColumnName = identifier:( ObjectName "." ObjectName / ObjectName ) {
+  var ret = Array.isArray(identifier) ? {
+    tableName: identifier[0],
+    columnName: identifier[2]
+  } : { tableName: "", columnName: identifier }
+  return ret;
+}
+
 TableName "table name" = identifier:( ObjectName "." ObjectName / ObjectName ) {
   var ret = Array.isArray(identifier) ? {
     dbName: identifier[0],
@@ -531,7 +559,7 @@ letter "letter"
   = [a-zA-Z]
 
 defaultValue "defaults"
-  = d:(anyCharacter / integer+ / "") {
+  = d:(anyCharacter / integer+ / anyInput / "") {
   	var val = null;
     if (Array.isArray(d)) {
       val = flatten(d);
@@ -545,7 +573,13 @@ defaultValue "defaults"
 
 anyCharacter "any characters"
   = chars:("'" (!"'" SourceCharacter)* "'") {
-	var flattened = flatten(chars);
+  	var flattened = flatten(chars);
+    return flattened.join("");
+  }
+
+anyInput "any inputs"
+  = chars:((!EOS SourceCharacter)* EOS) { 
+  	var flattened = flatten(chars);
     return flattened.join("");
   }
 
@@ -554,7 +588,7 @@ any "any"
   = ((!EOS SourceCharacter)* EOS) { return null; }
 
 regularIdentifier "regular Identifier"
-  = [a-zA-Z_]+
+  = [a-zA-Z0-9_]+
 
 wl = "(" { return null; }
 wr = ")" { return null; }
