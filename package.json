@@ -6,7 +6,7 @@
   "types": "types/oq-mapper.d.ts",
   "scripts": {
     "postinstall": "npm run build",
-    "build": "pegjs -o dist/oq-mapper.js src/oq-mapper.peg"
+    "build": "pegjs -o dist/oq-mapper-parser.js src/oq-mapper.peg"
   },
   "repository": {
     "type": "git",
