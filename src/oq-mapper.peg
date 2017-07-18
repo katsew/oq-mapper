@@ -227,24 +227,17 @@ Elements = (
 //   return column;
 // }
 
-Column = _ fieldName:ObjectName _ type:Type _ NullRestriction _ defaultVal:( DefaultToken _ anyInput / AutoIncrementToken / "" ) _ meta:( Comment / "" ) _ ( "," / "" ) __ {
+Column = _ fieldName:ObjectName _ type:Type _ nullRestriction:NullRestriction _ defaultVal:( DefaultToken _ anyInput / "" ) _ autoIncrement:( AutoIncrementToken / "" ) _ meta:( Comment / "" ) _ ( "," / "" ) __ {
+  console.log(nullRestriction);
   console.log(defaultVal);
+  console.log(autoIncrement);
   var column = Object.assign({
     name: fieldName,
     default: defaultVal,
-    autoIncrement: true,
-  }, type, meta);
+    autoIncrement: autoIncrement !== "",
+  }, type, meta, nullRestriction);
   return column;
 }
-
-// AutoIncrementColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ AutoIncrementToken _ meta:( Comment / "" ) _ ( "," / "" ) __ {
-//   var column = Object.assign({
-//     name: fieldName,
-//     default: null,
-//     autoIncrement: true
-//   }, type, meta) ;
-//   return column;
-// }
 
 // NotNullColumn = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ meta:( Comment / "" ) _ ( "," / "" ) __ {
 //   var zeroValue = null;
@@ -284,8 +277,13 @@ Column = _ fieldName:ObjectName _ type:Type _ NullRestriction _ defaultVal:( Def
 
 
 NullRestriction = _ head:( NotToken / "" ) _ tail:( NullToken / "" ) _ {
-  console.log(head, tail);
-  return null;
+  var res = {
+    allowNull: true
+  };
+  if (head !== "") {
+    res.allowNull = false
+  }
+  return res;
 }
 
 PrimaryKey
