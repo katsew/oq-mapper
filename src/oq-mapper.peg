@@ -196,7 +196,7 @@ ShowStatement = ShowToken any { return null; }
 Comment "comment" = CommentToken _ comment:anyCharacter {
   var replaced = comment.replace(/'/g, "").replace(/"/g, "'");
   var tag = parseTagInComment(replaced);
-  console.log("Comment", replaced, tag);
+  console.log("Comment:", replaced, tag);
   return {
    comment: replaced,
    tags: tag
@@ -218,24 +218,11 @@ Elements = (
   Column
 )+
 
-// Column = _ fieldName:ObjectName _ type:Type _ NotToken _ NullToken _ DefaultToken _ defaultVal:defaultValue _ meta:( Comment / "" ) _ ( "," / "" ) __ {
-//   var column = Object.assign({
-//     name: fieldName,
-//     default: defaultVal,
-//     autoIncrement: true,
-//   }, type, meta);
-//   return column;
-// }
-
-Column = _ fieldName:ObjectName _ type:Type _ nullRestriction:NullRestriction _ defaultVal:( DefaultToken _ anyInput / "" ) _ autoIncrement:( AutoIncrementToken / "" ) _ meta:( Comment / "" ) _ ( "," / "" ) __ {
-  console.log(nullRestriction);
-  console.log(defaultVal);
-  console.log(autoIncrement);
+Column = _ fieldName:ObjectName _ type:Type _ nullRestriction:NullRestriction _ defaultValue:DefaultValue _ autoIncrement:AutoIncrement _ meta:( Comment / "" ) _ ( "," / "" ) __ {
   var column = Object.assign({
     name: fieldName,
-    default: defaultVal,
-    autoIncrement: autoIncrement !== "",
-  }, type, meta, nullRestriction);
+    default: defaultValue,
+  }, type, meta, nullRestriction, autoIncrement);
   return column;
 }
 
@@ -262,21 +249,16 @@ Column = _ fieldName:ObjectName _ type:Type _ nullRestriction:NullRestriction _ 
 //   return column;
 // }
 
-// NullColumn = _ fieldName:ObjectName _ type:Type _ (
-//   NullToken
-//   / DefaultToken _ NullToken
-// ) _ meta:( Comment / "" ) _ ( "," / "" ) __ {
-//   var column = Object.assign({
-//     name: fieldName,
-//     type: type,
-//     default: null,
-//     autoIncrement: false
-//   }, type, meta);
-//   return column;
-// }
+DefaultValue "default statement" = defaultValue:( DefaultToken _ anyInput / "" ) {
+  console.log("Default Value:", defaultValue);
+  return null;
+}
 
+AutoIncrement "auto increment statement" = ai:( AutoIncrementToken / "" ) {
+  return ai !== "" ? { autoIncrement: true } : { autoIncrement: false};
+}
 
-NullRestriction = _ head:( NotToken / "" ) _ tail:( NullToken / "" ) _ {
+NullRestriction "null statement" = _ head:( NotToken / "" ) _ tail:( NullToken / "" ) _ {
   var res = {
     allowNull: true
   };
