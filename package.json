@@ -1,6 +1,6 @@
 {
   "name": "oq-mapper",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Object/Query Mapper for Node.js.",
   "main": "dist/oq-mapper.js",
   "bin": "bin/oq-mapper",
