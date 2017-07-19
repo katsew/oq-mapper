@@ -14,6 +14,8 @@
             "min": 0,
             "max": 4294967295,
             "bites": 4,
+            "comment": "",
+            "tags": [],
             "allowNull": false,
             "default": 0,
             "autoIncrement": true
@@ -22,6 +24,8 @@
             "name": "category_name",
             "type": "varchar",
             "length": 0,
+            "comment": "",
+            "tags": [],
             "allowNull": false,
             "default": "",
             "autoIncrement": false
@@ -30,6 +34,8 @@
             "name": "category_description",
             "type": "varchar",
             "length": 0,
+            "comment": "",
+            "tags": [],
             "allowNull": true,
             "default": "",
             "autoIncrement": false
@@ -37,6 +43,8 @@
          {
             "name": "created_at",
             "type": "datetime",
+            "comment": "",
+            "tags": [],
             "allowNull": true,
             "default": "CURRENT_TIMESTAMP",
             "autoIncrement": false
@@ -44,6 +52,8 @@
          {
             "name": "updated_at",
             "type": "datetime",
+            "comment": "",
+            "tags": [],
             "allowNull": true,
             "default": "CURRENT_TIMESTAMP",
             "autoIncrement": false
@@ -67,6 +77,8 @@
             "min": -2147483648,
             "max": 2147483647,
             "bites": 4,
+            "comment": "",
+            "tags": [],
             "allowNull": false,
             "default": 0,
             "autoIncrement": true
@@ -75,8 +87,10 @@
             "name": "movie_title",
             "type": "varchar",
             "length": 0,
+            "comment": "",
+            "tags": [],
             "allowNull": false,
-            "default": "",
+            "default": "'無題'",
             "autoIncrement": false
          },
          {
@@ -94,14 +108,16 @@
                }
             ],
             "allowNull": false,
-            "default": 0,
+            "default": "0",
             "autoIncrement": false
          },
          {
             "name": "release_date",
             "type": "date",
+            "comment": "",
+            "tags": [],
             "allowNull": true,
-            "default": "CURRENT_TIMESTAMP",
+            "default": "CURRENT_TIMESTAMP()",
             "autoIncrement": false
          }
       ],
@@ -145,6 +161,8 @@
             "min": 0,
             "max": 4294967295,
             "bites": 4,
+            "comment": "",
+            "tags": [],
             "allowNull": false,
             "default": 0,
             "autoIncrement": true
@@ -153,6 +171,8 @@
             "name": "customer_name",
             "type": "varchar",
             "length": 0,
+            "comment": "",
+            "tags": [],
             "allowNull": false,
             "default": "",
             "autoIncrement": false
@@ -161,6 +181,8 @@
             "name": "address1",
             "type": "varchar",
             "length": 0,
+            "comment": "",
+            "tags": [],
             "allowNull": true,
             "default": "",
             "autoIncrement": false
@@ -169,6 +191,8 @@
             "name": "address2",
             "type": "varchar",
             "length": 0,
+            "comment": "",
+            "tags": [],
             "allowNull": true,
             "default": "",
             "autoIncrement": false
@@ -181,6 +205,8 @@
             "min": 0,
             "max": 4294967295,
             "bites": 4,
+            "comment": "",
+            "tags": [],
             "allowNull": true,
             "default": 0,
             "autoIncrement": false
@@ -188,6 +214,8 @@
          {
             "name": "created_at",
             "type": "datetime",
+            "comment": "",
+            "tags": [],
             "allowNull": true,
             "default": "CURRENT_TIMESTAMP",
             "autoIncrement": false
@@ -195,6 +223,8 @@
          {
             "name": "updated_at",
             "type": "datetime",
+            "comment": "",
+            "tags": [],
             "allowNull": true,
             "default": "CURRENT_TIMESTAMP",
             "autoIncrement": false
@@ -233,6 +263,8 @@
             "min": 0,
             "max": 4294967295,
             "bites": 4,
+            "comment": "",
+            "tags": [],
             "allowNull": false,
             "default": 0,
             "autoIncrement": true
@@ -245,6 +277,8 @@
             "min": 0,
             "max": 4294967295,
             "bites": 4,
+            "comment": "",
+            "tags": [],
             "allowNull": false,
             "default": 0,
             "autoIncrement": false

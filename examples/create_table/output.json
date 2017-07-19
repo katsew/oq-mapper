@@ -14,6 +14,8 @@
             "min": -2147483648,
             "max": 2147483647,
             "bites": 4,
+            "comment": "",
+            "tags": [],
             "allowNull": false,
             "default": 0,
             "autoIncrement": true
@@ -22,6 +24,8 @@
             "name": "movie_title",
             "type": "varchar",
             "length": 0,
+            "comment": "",
+            "tags": [],
             "allowNull": false,
             "default": "",
             "autoIncrement": false
@@ -29,6 +33,8 @@
          {
             "name": "release_date",
             "type": "date",
+            "comment": "",
+            "tags": [],
             "allowNull": true,
             "default": "CURRENT_TIMESTAMP",
             "autoIncrement": false
