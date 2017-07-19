@@ -1,12 +1,12 @@
 {
   "name": "oq-mapper",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Object/Query Mapper for Node.js.",
   "main": "dist/oq-mapper.js",
   "bin": "bin/oq-mapper",
   "types": "types/oq-mapper.d.ts",
   "scripts": {
-    "prepublish": "npm run build",
+    "prepare": "npm run build",
     "build": "pegjs -o dist/oq-mapper-parser.js src/oq-mapper.pegjs"
   },
   "repository": {
