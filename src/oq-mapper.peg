@@ -216,14 +216,21 @@ ShowStatement = ShowToken any { return null; }
 // Combinations
 
 //// Comment
-Comment "comment" = CommentToken _ comment:anyCharacter {
+Comment "Comment" = comment:(CommentStatement / "") {  
+
+  if (comment === "") { return { comment: "", tags: [] }; }
+  
   var replaced = comment.replace(/'/g, "").replace(/"/g, "'");
   var tag = parseTagInComment(replaced);
-  console.log("Comment:", replaced, tag);
   return {
    comment: replaced,
    tags: tag
  };
+ 
+}
+
+CommentStatement = CommentToken _ chars:anyCharacter {
+  return chars;
 }
 
 //// Column
@@ -241,20 +248,37 @@ Elements = (
   Column
 )+
 
-Column = _ fieldName:ObjectName _ type:Type _ nullRestriction:NullRestriction _ specifiedDefaultValue:DefaultValue _ autoIncrement:AutoIncrement _ meta:( Comment / "" ) _ ( "," / "" ) __ {
-  console.log("DefaultValue?: ", specifiedDefaultValue);
+Column = _ fieldName:FieldName _ type:Type _ nullRestriction:NullRestriction _ specifiedDefaultValue:DefaultValue _ autoIncrement:AutoIncrement _ meta:Comment _ ( "," / "" ) __ {
   var defaultValue = genDefaultValue(type, nullRestriction);
   if (specifiedDefaultValue !== null) {
   	defaultValue.default = specifiedDefaultValue;
   }
-  var column = Object.assign({
-    name: fieldName,
-  }, type, meta, nullRestriction, defaultValue, autoIncrement);
+  var column = Object.assign(
+    {},
+    fieldName,
+    type,
+    meta,
+    nullRestriction,
+    defaultValue,
+    autoIncrement
+  );
   return column;
 }
 
-DefaultValue "default statement" = value:(DefaultToken defaultValue / "") {
-  return value !== "" ? value.slice(1)[0] : null;
+FieldName = name:ObjectName {
+  return {
+    name: name
+  };
+}
+
+DefaultValueStatement = DefaultToken _ val:defaultValue {  
+  return Array.isArray(val) ? val.filter(function(v) {
+    return v !== "";
+  }).join("") : val;
+}
+
+DefaultValue "default statement" = value:( DefaultValueStatement / "" ) {
+  return value !== "" ? value : null;
 }
 
 AutoIncrement "auto increment statement" = ai:( AutoIncrementToken / "" ) {
@@ -415,11 +439,11 @@ DateTime = type:( "DATETIME" / "datetime" ) {
 
 // TypeMeta ------------------------------
 
-Length "length of value" = ( "(" length:integer+ ")" / "" ) { return length === "" ? 0 : length; }
-Sign "signed/unsigned" = sign:( "UNSIGNED" / "unsigned" / "" ) { return sign === "" ? "signed" : "unsigned"; }
+Length "Length of value" = ( "(" length:integer+ ")" / "" ) { return length === "" ? 0 : length; }
+Sign "Signed/Unsigned" = sign:( "UNSIGNED" / "unsigned" / "" ) { return sign === "" ? "signed" : "unsigned"; }
 
 // Indentifiers ------------------------------
-ObjectName "identifier" = name:( "`" regularIdentifier "`" / regularIdentifier ) {
+ObjectName "Identifier" = name:( "`" regularIdentifier "`" / regularIdentifier ) {
   var objectName = Array.isArray(name) ? name.join("").replace(/`/g, "").split(",").join("") : name.replace(/`/g, "").split(",").join("");
   return objectName;
 }
@@ -448,9 +472,16 @@ engines = ("InnoDB" / "MyISAM")
 //// Charests ------------------------------
 charsets = ("utf8")
 
+//// MySQL Functions
+mysqlFunctions = CurrentTimestampFunc
+  / NowFunc
+  
+NowFunc = ( "NOW" / "now") ( "()" / "" )
+CurrentTimestampFunc = ( "CURRENT_TIMESTAMP" / "current_timestamp" ) ("()" / "")
+
 // Utilities ------------------------------
 
-EOS "end of statement"
+EOS "End of statement"
   = __ ";"
   / __ "$$"
   / _ SingleLineComment? LineTerminatorSequence
@@ -461,7 +492,7 @@ EOF
   = !.
 
 __
-  = ( (WhiteSpace / LineTerminatorSequence / Comment / MultiLineDelimiter / MultiLineTransaction)* ) { return null; }
+  = ( (WhiteSpace / LineTerminatorSequence / CommentOut / MultiLineDelimiter / MultiLineTransaction)* ) { return null; }
 
 _
   = ( (
@@ -470,7 +501,7 @@ _
   / MultiLineDelimiterNoLineTerminator
   / MultiLineTransactionNoLineTerminator)* ) { return null; }
 
-WhiteSpace "whitespace"
+WhiteSpace "Whitespace"
   = 
   ws:("\t"
   / "\v"
@@ -486,14 +517,14 @@ Zs = [\u0020\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]
 LineTerminator
   = [\n\r\u2028\u2029]
 
-LineTerminatorSequence "end of line"
+LineTerminatorSequence "End of line"
   = "\n"
   / "\r\n"
   / "\r"
   / "\u2028"
   / "\u2029"
   
-CommentOut "comment out"
+CommentOut "Comment out"
   = comments:( MultiLineComment
   / SingleLineComment ) {
     return null;
@@ -502,10 +533,10 @@ CommentOut "comment out"
 MultiLineComment
   = "/*" (!"*/" SourceCharacter)* "*/"
 
-MultiLineCommentNoLineTerminator "open mulit-line comment"
+MultiLineCommentNoLineTerminator "Open mulit-line comment"
   = "/*" (!("*/" / LineTerminator) SourceCharacter)* "*/"
 
-SingleLineComment "single-line comment"
+SingleLineComment "Single-line comment"
   = "--" (!LineTerminator SourceCharacter)*
 
 DelimiterStart = DelimiterToken _ "$$"
@@ -514,7 +545,7 @@ DelimiterEnd = DelimiterToken _ ";"
 MultiLineDelimiter
   = DelimiterStart (!DelimiterEnd SourceCharacter)* DelimiterEnd
   
-MultiLineDelimiterNoLineTerminator "open mulit-line delimiter"
+MultiLineDelimiterNoLineTerminator "Open mulit-line delimiter"
   = DelimiterStart (!(DelimiterEnd / LineTerminator) SourceCharacter)* DelimiterEnd
 
 StartTransaction = StartToken _ TransactionToken __ EOS
@@ -523,36 +554,33 @@ Commit = CommitToken __ EOS
 MultiLineTransaction
   = StartTransaction (!Commit SourceCharacter)* Commit
 
-MultiLineTransactionNoLineTerminator "open mulit-line transaction"
+MultiLineTransactionNoLineTerminator "Open mulit-line transaction"
   = StartTransaction (!(Commit / LineTerminator) SourceCharacter)* Commit
 
 SourceCharacter
   = .
 
-integer "integer"
+integer "Integer"
   = [0-9]
 
-letter "letter"
+letter "Letter"
   = [a-zA-Z]
 
-anyCharacter "any characters"
-  = chars:("'" (!"'" SourceCharacter)* "'") {
+anyCharacter "Any characters"
+  = chars:( ("'" (!"'" SourceCharacter)* "'") / ('"' (!'"' SourceCharacter)* '"') ) {
   	var flattened = flatten(chars);
     return flattened.join("");
   }
-
-defaultValue "default value"
-  = chars:((!EOS SourceCharacter)* EOS) {
-  	var flattened = flatten(chars);
-    flattened.lastIndexOf(",") === flattened.length - 1 && flattened.pop();
-    return flattened.join("").trim();
-  }
+  
+commentCharacters = chars:("'" (!"'" SourceCharacter)* "'")
+  
+defaultValue = anyCharacter / integer+ / mysqlFunctions
 
 // Any does not consume any input
-any "any"
-  = ((!EOS SourceCharacter)* EOS) { return null; }
+any "Any"
+  = (!EOS SourceCharacter)* EOS  { return null; }
 
-regularIdentifier "regular Identifier"
+regularIdentifier "Regular Identifier"
   = [a-zA-Z0-9_]+
 
 wl = "(" { return null; }
