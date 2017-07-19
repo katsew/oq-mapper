@@ -1,6 +1,6 @@
 # Abstract
 
-Object/Query Mapper for Node.js.
+Object/Query mapper for Node.js.
 
 :zap: Currently support only `CREATE TABLE` statement.
 
