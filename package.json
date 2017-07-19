@@ -28,8 +28,5 @@
   "homepage": "https://github.com/katsew/oq-mapper#readme",
   "devDependencies": {
     "pegjs": "^0.10.0"
-  },
-  "dependencies": {
-    "pegjs": "^0.10.0"
   }
 }
