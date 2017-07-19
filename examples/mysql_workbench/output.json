@@ -8,48 +8,45 @@
       "fields": [
          {
             "name": "category_id",
-            "default": "AUTO_INCREMENT",
-            "autoIncrement": true,
             "type": "int",
             "sign": "unsigned",
             "length": 0,
             "min": 0,
             "max": 4294967295,
-            "bites": 4
+            "bites": 4,
+            "allowNull": false,
+            "default": 0,
+            "autoIncrement": true
          },
          {
             "name": "category_name",
-            "default": "",
-            "autoIncrement": true,
             "type": "varchar",
-            "length": 0
+            "length": 0,
+            "allowNull": false,
+            "default": "",
+            "autoIncrement": false
          },
          {
             "name": "category_description",
-            "default": "",
-            "autoIncrement": true,
             "type": "varchar",
-            "length": 0
+            "length": 0,
+            "allowNull": true,
+            "default": "",
+            "autoIncrement": false
          },
          {
             "name": "created_at",
-            "default": [
-               "DEFAULT",
-               null,
-               "CURRENT_TIMESTAMP,"
-            ],
-            "autoIncrement": true,
-            "type": "datetime"
+            "type": "datetime",
+            "allowNull": true,
+            "default": "CURRENT_TIMESTAMP",
+            "autoIncrement": false
          },
          {
             "name": "updated_at",
-            "default": [
-               "DEFAULT",
-               null,
-               "CURRENT_TIMESTAMP,"
-            ],
-            "autoIncrement": true,
-            "type": "datetime"
+            "type": "datetime",
+            "allowNull": true,
+            "default": "CURRENT_TIMESTAMP",
+            "autoIncrement": false
          }
       ],
       "constraint": [],
@@ -64,26 +61,26 @@
       "fields": [
          {
             "name": "movie_id",
-            "default": "AUTO_INCREMENT",
-            "autoIncrement": true,
             "type": "int",
             "sign": "signed",
             "length": 0,
             "min": -2147483648,
             "max": 2147483647,
-            "bites": 4
+            "bites": 4,
+            "allowNull": false,
+            "default": 0,
+            "autoIncrement": true
          },
          {
             "name": "movie_title",
-            "default": "",
-            "autoIncrement": true,
             "type": "varchar",
-            "length": 0
+            "length": 0,
+            "allowNull": false,
+            "default": "",
+            "autoIncrement": false
          },
          {
             "name": "movie_category_id",
-            "default": "",
-            "autoIncrement": true,
             "type": "int",
             "sign": "unsigned",
             "length": 0,
@@ -95,13 +92,17 @@
                {
                   "”unknown_category”": "0"
                }
-            ]
+            ],
+            "allowNull": false,
+            "default": 0,
+            "autoIncrement": false
          },
          {
             "name": "release_date",
-            "default": "",
-            "autoIncrement": true,
-            "type": "date"
+            "type": "date",
+            "allowNull": true,
+            "default": "CURRENT_TIMESTAMP",
+            "autoIncrement": false
          }
       ],
       "constraint": [
@@ -138,58 +139,65 @@
       "fields": [
          {
             "name": "customer_id",
-            "default": "AUTO_INCREMENT",
-            "autoIncrement": true,
             "type": "int",
             "sign": "unsigned",
             "length": 0,
             "min": 0,
             "max": 4294967295,
-            "bites": 4
+            "bites": 4,
+            "allowNull": false,
+            "default": 0,
+            "autoIncrement": true
          },
          {
             "name": "customer_name",
-            "default": "",
-            "autoIncrement": true,
             "type": "varchar",
-            "length": 0
+            "length": 0,
+            "allowNull": false,
+            "default": "",
+            "autoIncrement": false
          },
          {
             "name": "address1",
-            "default": "",
-            "autoIncrement": true,
             "type": "varchar",
-            "length": 0
+            "length": 0,
+            "allowNull": true,
+            "default": "",
+            "autoIncrement": false
          },
          {
             "name": "address2",
-            "default": "",
-            "autoIncrement": true,
             "type": "varchar",
-            "length": 0
+            "length": 0,
+            "allowNull": true,
+            "default": "",
+            "autoIncrement": false
          },
          {
             "name": "phone_number",
-            "default": "",
-            "autoIncrement": true,
             "type": "int",
             "sign": "unsigned",
             "length": 0,
             "min": 0,
             "max": 4294967295,
-            "bites": 4
+            "bites": 4,
+            "allowNull": true,
+            "default": 0,
+            "autoIncrement": false
          },
          {
             "name": "created_at",
-            "default": "",
-            "autoIncrement": true,
-            "type": "datetime"
+            "type": "datetime",
+            "allowNull": true,
+            "default": "CURRENT_TIMESTAMP",
+            "autoIncrement": false
          },
          {
             "name": "updated_at",
-            "default": "",
-            "autoIncrement": true,
-            "type": "datetime"
+            "type": "datetime",
+            "allowNull": true,
+            "default": "CURRENT_TIMESTAMP",
+            "autoIncrement": false
          }
       ],
       "constraint": [],
@@ -219,25 +227,27 @@
       "fields": [
          {
             "name": "card_id",
-            "default": "AUTO_INCREMENT",
-            "autoIncrement": true,
             "type": "int",
             "sign": "unsigned",
             "length": 0,
             "min": 0,
             "max": 4294967295,
-            "bites": 4
+            "bites": 4,
+            "allowNull": false,
+            "default": 0,
+            "autoIncrement": true
          },
          {
             "name": "customer_id",
-            "default": "",
-            "autoIncrement": true,
             "type": "int",
             "sign": "unsigned",
             "length": 0,
             "min": 0,
             "max": 4294967295,
-            "bites": 4
+            "bites": 4,
+            "allowNull": false,
+            "default": 0,
+            "autoIncrement": false
          }
       ],
       "constraint": [],
