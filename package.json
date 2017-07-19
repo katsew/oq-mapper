@@ -1,8 +1,9 @@
 {
   "name": "oq-mapper",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Object/Query Mapper for Node.js.",
   "main": "dist/oq-mapper.js",
+  "bin": "bin/oq-mapper",
   "types": "types/oq-mapper.d.ts",
   "scripts": {
     "postinstall": "npm run build",
@@ -28,5 +29,8 @@
   "homepage": "https://github.com/katsew/oq-mapper#readme",
   "devDependencies": {
     "pegjs": "^0.10.0"
+  },
+  "dependencies": {
+    "commander": "^2.11.0"
   }
 }
