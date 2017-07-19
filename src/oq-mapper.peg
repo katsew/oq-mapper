@@ -439,7 +439,7 @@ DateTime = type:( "DATETIME" / "datetime" ) {
 
 // TypeMeta ------------------------------
 
-Length "Length of value" = ( "(" length:integer+ ")" / "" ) { return length === "" ? 0 : length; }
+Length "Length of value" = "(" length:integer+ ")" / length:"" { return length === "" ? 0 : length; }
 Sign "Signed/Unsigned" = sign:( "UNSIGNED" / "unsigned" / "" ) { return sign === "" ? "signed" : "unsigned"; }
 
 // Indentifiers ------------------------------
