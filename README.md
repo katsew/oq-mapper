@@ -33,26 +33,29 @@ This kind of object structure!
       "fields": [
          {
             "name": "movie_id",
-            "default": null,
-            "autoIncrement": true,
             "type": "int",
             "sign": "signed",
             "length": 0,
             "min": -2147483648,
             "max": 2147483647,
-            "bites": 4
+            "bites": 4,
+            "allowNull": false,
+            "default": 0,
+            "autoIncrement": true
          },
          {
             "name": "movie_title",
-            "default": "",
-            "autoIncrement": false,
             "type": "varchar",
-            "length": 0
+            "length": 0,
+            "allowNull": false,
+            "default": "",
+            "autoIncrement": false
          },
          {
             "name": "release_date",
             "type": "date",
-            "default": null,
+            "allowNull": true,
+            "default": "CURRENT_TIMESTAMP",
             "autoIncrement": false
          }
       ],
