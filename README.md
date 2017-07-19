@@ -4,6 +4,22 @@ Object/Query Mapper for Node.js.
 
 :zap: Currently support only `CREATE TABLE` statement.
 
+# Use the module as command-line tool
+
+Install via npm.
+
+```
+npm install -g oq-mapper
+```
+
+Then, run command
+
+```
+oq-mapper <file> <output>
+```
+
+Output file is compatible with JSON.
+
 # Behaviour
 
 This query outputs...
