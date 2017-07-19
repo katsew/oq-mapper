@@ -1,13 +1,13 @@
 {
   "name": "oq-mapper",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Object/Query Mapper for Node.js.",
-  "main": "./dist/oq-mapper.js",
-  "bin": "./bin/oq-mapper",
-  "types": "./types/oq-mapper.d.ts",
+  "main": "dist/oq-mapper.js",
+  "bin": "bin/oq-mapper",
+  "types": "types/oq-mapper.d.ts",
   "scripts": {
-    "postinstall": "npm run build",
-    "build": "pegjs -o ./dist/oq-mapper-parser.js ./src/oq-mapper.peg"
+    "postinstall": "pegjs -o dist/oq-mapper-parser.js src/oq-mapper.peg",
+    "build": "pegjs -o dist/oq-mapper-parser.js src/oq-mapper.peg"
   },
   "repository": {
     "type": "git",
