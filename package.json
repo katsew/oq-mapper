@@ -1,12 +1,12 @@
 {
   "name": "oq-mapper",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Object/Query mapper for Node.js.",
-  "main": "dist/oq-mapper.js",
-  "bin": "bin/oq-mapper",
+  "main": "dist/oq-mapper-parser.js",
+  "bin": "bin/cli.js",
   "files": [
-    "dist",
-    "bin"
+    "dist/oq-mapper-parser.js",
+    "bin/cli.js"
   ],
   "types": "types/oq-mapper.d.ts",
   "scripts": {
