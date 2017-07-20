@@ -78,9 +78,9 @@
   }
   
   var flattenParams = function(head, tail) {
-    var rest = tail.map(function(item) {
-	  return item[item.length - 1];
-    });
+    var rest = tail.length > 0 ? tail.reduce(function(prev, next) {
+		return prev.concat(next);
+    }, []).join("").split(",").filter(function(item){ return item !== ""; }) : [];
     return [head, ...rest];
   }
   
@@ -300,19 +300,22 @@ PrimaryKey
   }
 
 Index
-  = IndexToken _ identifier:ObjectName _ "(" head:ObjectName tail:( __ "," __  ObjectName)* _ ( AscToken / DescToken / "" ) ")" ( "," / "" ) __ {
+  = IndexToken _ identifier:ObjectName _ "(" head:ObjectName _ SortStatement tail:( __ "," __  ObjectName _ SortStatement)* _ ")" ( "," / "" ) __ {
       return genIndex(identifier, head, tail, false);
   }
   
 Key
-  = KeyToken _ identifier:ObjectName _ "(" head:ObjectName tail:( __ "," __  ObjectName)* _ ( AscToken / DescToken / "" ) ")" ( "," / "" ) __ {
+  = KeyToken _ identifier:ObjectName _ "(" head:ObjectName _ SortStatement tail:( __ "," __  ObjectName _ SortStatement )* _ ")" ( "," / "" ) __ {
     return genIndex(identifier, head, tail, false);
   }
   
 UniqueIndex
-  = UniqueToken _ IndexToken _ identifier:ObjectName _ "(" head:ObjectName tail:( __ "," __  ObjectName)* _ ( AscToken / DescToken / "" ) ")" ( "," / "" ) __ {
+  = UniqueToken _ IndexToken _ identifier:ObjectName _ "(" head:ObjectName _ SortStatement tail:( __ "," __  ObjectName _ SortStatement)* _ ")" ( "," / "" ) __ {
     return genIndex(identifier, head, tail, true);
   }
+  
+SortStatement
+  = sort:( AscToken / DescToken / "" ) { return null; }
 
 Constraint
   = ConstraintToken _ name:ObjectName __
@@ -439,7 +442,7 @@ DateTime = type:( "DATETIME" / "datetime" ) {
 
 // TypeMeta ------------------------------
 
-Length "Length of value" = "(" length:integer+ ")" / length:"" { return length === "" ? 0 : length; }
+Length "Length of value" = length:( "(" intVal ")" / "" ) { return length === "" ? 0 : Number(length.filter(function(item) { return item !== "(" && item !== ")" })[0]); }
 Sign "Signed/Unsigned" = sign:( "UNSIGNED" / "unsigned" / "" ) { return sign === "" ? "signed" : "unsigned"; }
 
 // Indentifiers ------------------------------
@@ -562,6 +565,11 @@ SourceCharacter
 
 integer "Integer"
   = [0-9]
+
+intVal "Int"
+  = int:integer+ {
+    return int.join("");
+  }
 
 letter "Letter"
   = [a-zA-Z]
